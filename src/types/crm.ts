@@ -1,0 +1,201 @@
+/**
+ * Types and interfaces for CRM Motos - Sistema Integral de Gestión para Talleres
+ */
+
+export type UserRole = 'admin' | 'reception' | 'mechanic' | 'warehouse' | 'client';
+
+export type OrderStatus =
+  | 'pendiente'               // Fase 1: Check-in realizado, esperando asignación
+  | 'en_diagnostico'          // Fase 2: Mecánico diagnosticando
+  | 'esperando_aprobacion'    // Fase 3: Presupuesto armado, esperando visto bueno del cliente
+  | 'en_reparacion'           // Fase 4: En ejecución de reparación
+  | 'esperando_refaccion'     // Fase 4 sub: Pausado temporalmente por falta de repuestos
+  | 'pruebas_calidad'         // Fase 5: Pruebas de ruta, control de calidad y lavado
+  | 'listo_entrega'           // Fase 6: Terminado, esperando retiro y cobro
+  | 'entregado';              // Fase 6-7: Cobrado, firmado y entregado
+
+export type FuelLevel = 0 | 25 | 50 | 75 | 100;
+
+export interface DamageReport {
+  zone: 'frente' | 'manubrio' | 'tanque' | 'carenado_izq' | 'carenado_der' | 'escape' | 'rueda_del' | 'rueda_tras' | 'asiento_colin';
+  type: 'rayón' | 'abolladura' | 'plástico_roto' | 'espejo_roto' | 'fuga' | 'otro';
+  severity: 'leve' | 'moderado' | 'grave';
+  notes: string;
+}
+
+export interface CheckInVisual {
+  fuelLevel: FuelLevel;
+  mileage: number;
+  damages: DamageReport[];
+  accessoriesLeft: string[]; // e.g. Casco, Llave baúl, Portaequipaje, Candado de disco, Documentos
+  photos: string[]; // URLs or base64 images
+  customerSignature?: string;
+  notes: string;
+}
+
+export interface ServiceItem {
+  id: string;
+  description: string;
+  type: 'mano_de_obra' | 'repuesto';
+  partNumber?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  approvedByClient: boolean;
+  isDispensed?: boolean; // Surtido por el almacén
+}
+
+export interface TimeLog {
+  id: string;
+  mechanicId: string;
+  mechanicName: string;
+  startTime: string; // ISO
+  endTime?: string;  // ISO
+  secondsElapsed: number;
+  notes?: string;
+}
+
+export interface QualityCheckItem {
+  key: string;
+  label: string;
+  checked: boolean;
+  verifiedBy?: string;
+}
+
+export interface PaymentRecord {
+  id: string;
+  method: 'efectivo' | 'tarjeta' | 'transferencia';
+  amount: number;
+  date: string;
+  reference?: string;
+  invoiceNumber: string;
+}
+
+export interface ServiceOrder {
+  id: string;               // e.g. "OS-2026-104"
+  orderNumber: number;
+  createdAt: string;
+  updatedAt: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  motorcycleId: string;
+  motorcycleInfo: {
+    brand: string;
+    model: string;
+    year: number;
+    displacement: string; // e.g. "250cc"
+    plate: string;
+    vin: string;
+    color: string;
+  };
+  reasonForVisit: string;
+  status: OrderStatus;
+  priority: 'normal' | 'alta' | 'urgente';
+  assignedMechanicId?: string;
+  assignedMechanicName?: string;
+  checkIn: CheckInVisual;
+  items: ServiceItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  deposit: number; // Anticipo
+  payments: PaymentRecord[];
+  timeLogs: TimeLog[];
+  totalWorkedSeconds: number;
+  isTimerRunning?: boolean;
+  timerStartedAt?: number; // timestamp
+  diagnosticNotes?: string;
+  diagnosticPhotos?: string[];
+  qualityChecklist: QualityCheckItem[];
+  washedAndCleaned: boolean;
+  readyNotifiedAt?: string;
+  checkoutSignature?: string;
+  checkoutNotes?: string;
+  satisfactionRating?: {
+    stars: number; // 1 to 5
+    comment?: string;
+    ratedAt: string;
+  };
+  nextServiceReminderDate?: string;
+}
+
+export interface Customer {
+  id: string;
+  fullName: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  address?: string;
+  taxId?: string; // RFC o Cédula fiscal
+  createdAt: string;
+  motorcycleIds: string[];
+}
+
+export interface Motorcycle {
+  id: string;
+  customerId: string;
+  brand: string;
+  model: string;
+  year: number;
+  displacement: string;
+  plate: string;
+  vin: string;
+  color: string;
+  currentMileage: number;
+  lastServiceDate?: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  partNumber: string;
+  name: string;
+  brand: string;
+  category: 'aceites_fluidos' | 'frenos' | 'motor' | 'transmision' | 'electricidad' | 'neumaticos' | 'filtros' | 'accesorios';
+  compatibleModels: string[]; // e.g. ["Yamaha MT-03", "Yamaha R3", "Italika 250Z"]
+  costPrice: number;
+  salePrice: number;
+  stock: number;
+  minStock: number;
+  location?: string; // e.g. "Estante B-3"
+}
+
+export interface StaffUser {
+  id: string;
+  fullName: string;
+  role: 'admin' | 'reception' | 'mechanic' | 'warehouse';
+  phone: string;
+  email: string;
+  active: boolean;
+  commissionPercentage: number; // e.g. 15% sobre mano de obra
+  specialty?: string; // e.g. "Motores 4T y Diagnóstico Eléctrico"
+  jobsCompleted?: number;
+}
+
+export interface WorkshopSettings {
+  workshopName: string;
+  legalName: string;
+  taxId: string; // RFC o CIF
+  address: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  website?: string;
+  logoUrl: string;
+  currencySymbol: string;
+  taxPercentage: number; // e.g. 16%
+  standardLaborHourRate: number;
+  warrantyPolicy: string;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
+}
+
+export interface KPIData {
+  activeRepairs: number;
+  todayRevenue: number;
+  monthRevenue: number;
+  deliveredThisMonth: number;
+  pendingServices: number;
+  averageTicket: number;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "CRM Motos",
+  "description": "Sistema Integral de Gestión y CRM para Talleres de Motocicletas con roles de Administrador, Recepción, Mecánicos, Almacén y Portal de Clientes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
