@@ -94,11 +94,11 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col text-[#010101] font-sans selection:bg-[#DD040F] selection:text-white">
       {/* Offline Toast if network drops */}
       {!isOnline && (
-        <div className="bg-amber-500 text-white text-xs font-bold py-1.5 px-4 text-center flex items-center justify-center gap-2 sticky top-0 z-50">
-          <WifiOff className="w-4 h-4 animate-bounce" />
+        <div className="bg-[#010101] text-white text-xs font-bold py-1.5 px-4 text-center flex items-center justify-center gap-2 sticky top-0 z-50 border-b border-[#DD040F]">
+          <WifiOff className="w-4 h-4 text-[#DD040F] animate-bounce" />
           <span>Modo Sin Conexión — Los datos se sincronizarán localmente en tu dispositivo.</span>
         </div>
       )}

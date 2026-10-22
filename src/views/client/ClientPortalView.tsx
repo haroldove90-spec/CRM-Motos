@@ -4,15 +4,9 @@ import { ServiceOrder } from '../../types/crm';
 import {
   Bike,
   Search,
-  CheckCircle2,
-  Clock,
-  Wrench,
-  Receipt,
   MessageCircle,
-  Phone,
   Star,
   ShieldCheck,
-  AlertCircle,
   BookOpen,
 } from 'lucide-react';
 
@@ -25,7 +19,7 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
   activeModule = 'status',
   onSelectModule,
 }) => {
-  const { orders, motorcycles, settings, toggleItemApproval, submitSatisfactionRating } = useCRM();
+  const { orders, settings, toggleItemApproval, submitSatisfactionRating } = useCRM();
   const [subTab, setSubTab] = useState<string>(activeModule);
 
   useEffect(() => {
@@ -39,13 +33,11 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
     if (onSelectModule) onSelectModule(tabId);
   };
 
-  // Search by plate, order ID or phone
-  const [searchTerm, setSearchTerm] = useState('84K-DF-3'); // Pre-fill with a sample bike for instant demo
+  const [searchTerm, setSearchTerm] = useState('84K-DF-3');
   const [ratingStars, setRatingStars] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
-  // Search logic
   const matchedOrder = orders.find((o) => {
     if (!searchTerm.trim()) return false;
     const q = searchTerm.trim().toLowerCase();
@@ -54,9 +46,8 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
       o.motorcycleInfo.plate.toLowerCase() === q ||
       o.customerPhone.replace(/[^0-9]/g, '').includes(q.replace(/[^0-9]/g, ''))
     );
-  }) || orders[0]; // fallback to first order so portal is never blank
+  }) || orders[0];
 
-  // All orders for this motorcycle/customer for the digital maintenance carnet
   const carnetOrders = matchedOrder
     ? orders.filter(
         (o) =>
@@ -96,18 +87,18 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Portal Header Card */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 p-6 rounded-3xl text-white border border-slate-800 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-[#010101] p-6 rounded-3xl text-white border border-neutral-800 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#DD040F]/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <span className="text-orange-500 font-extrabold text-xs uppercase tracking-widest block">
+            <span className="text-[#DD040F] font-extrabold text-xs uppercase tracking-widest block">
               Portal del Cliente • Transparencia Total
             </span>
             <h2 className="text-xl sm:text-2xl font-black mt-1">
               Seguimiento de tu Motocicleta en Vivo
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-[#AAA8A9] mt-1">
               {settings.workshopName} • Consulta avance, autoriza cotizaciones y accede a tu carnet de mantenimiento.
             </p>
           </div>
@@ -117,7 +108,7 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
               href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#DD040F] hover:bg-[#b5030c] text-white text-xs font-bold transition shadow-xs"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>Contactar Asesor</span>
@@ -126,26 +117,26 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
         </div>
 
         {/* Quick Search Plate Input */}
-        <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-wrap items-center gap-3">
+        <div className="mt-5 pt-4 border-t border-neutral-800 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[220px]">
             <input
               type="text"
               placeholder="Ingresa tu placa (ej: 84K-DF-3) o N° de Orden..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2.5 pl-10 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-xs sm:text-sm font-mono placeholder:text-slate-500 focus:outline-hidden focus:border-orange-500"
+              className="w-full px-4 py-2.5 pl-10 bg-[#141414] border border-neutral-700 rounded-xl text-white text-xs sm:text-sm font-mono placeholder:text-neutral-500 focus:outline-hidden focus:border-[#DD040F]"
             />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
           </div>
         </div>
       </div>
 
       {/* Client Subtabs Bar */}
-      <div className="flex border-b border-slate-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
+      <div className="flex border-b border-neutral-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
         <button
           onClick={() => handleTabChange('status')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'status' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'status' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Estatus en Vivo
@@ -153,7 +144,7 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
         <button
           onClick={() => handleTabChange('quote')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'quote' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'quote' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Aprobar Cotización
@@ -161,7 +152,7 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
         <button
           onClick={() => handleTabChange('carnet')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'carnet' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'carnet' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Carnet de Servicio
@@ -169,7 +160,7 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
         <button
           onClick={() => handleTabChange('contact')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'contact' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'contact' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Contacto & Taller
@@ -179,35 +170,35 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
       {matchedOrder ? (
         <div className="space-y-6">
           {/* Motorcycle & Order Summary Bar */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
-                <Bike className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-2xl bg-[#010101] text-white flex items-center justify-center shrink-0">
+                <Bike className="w-6 h-6 text-[#DD040F]" />
               </div>
               <div>
-                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800">
+                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-neutral-100 text-[#010101]">
                   {matchedOrder.id}
                 </span>
-                <h3 className="text-lg font-black text-slate-900 mt-0.5">
+                <h3 className="text-lg font-black text-[#010101] mt-0.5">
                   {matchedOrder.motorcycleInfo.brand} {matchedOrder.motorcycleInfo.model}
                 </h3>
-                <p className="text-xs text-slate-500 font-mono">
-                  Placa: <strong className="text-slate-900">{matchedOrder.motorcycleInfo.plate}</strong> • Odómetro: {matchedOrder.checkIn.mileage.toLocaleString()} km
+                <p className="text-xs text-neutral-500 font-mono">
+                  Placa: <strong className="text-[#010101]">{matchedOrder.motorcycleInfo.plate}</strong> • Odómetro: {matchedOrder.checkIn.mileage.toLocaleString()} km
                 </p>
               </div>
             </div>
 
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Estado Actual</span>
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-black bg-orange-100 text-orange-800 border border-orange-200 uppercase mt-0.5">
+              <span className="text-[10px] uppercase font-bold text-neutral-400 block">Estado Actual</span>
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-black bg-[#010101] text-white border border-neutral-800 uppercase mt-0.5">
                 {matchedOrder.status.replace('_', ' ')}
               </span>
             </div>
           </div>
 
           {/* Stepper Progress Bar */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-            <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-700">
+          <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+            <h4 className="font-extrabold text-xs uppercase tracking-wider text-neutral-700">
               Progreso del Servicio en Taller
             </h4>
 
@@ -221,25 +212,27 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
                     key={step.status}
                     className={`p-3 rounded-xl border flex flex-col items-center text-center transition ${
                       isCompleted
-                        ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900'
+                        ? 'bg-[#010101] border-[#010101] text-white'
                         : isCurrent
-                        ? 'bg-orange-50 border-orange-400 shadow-xs ring-2 ring-orange-500/20'
-                        : 'bg-slate-50/50 border-slate-200 text-slate-400 opacity-60'
+                        ? 'bg-[#DD040F] border-[#DD040F] text-white shadow-md'
+                        : 'bg-neutral-50 border-neutral-200 text-neutral-400 opacity-60'
                     }`}
                   >
                     <div
                       className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 ${
                         isCompleted
-                          ? 'bg-emerald-600 text-white'
+                          ? 'bg-neutral-800 text-white'
                           : isCurrent
-                          ? 'bg-orange-600 text-white animate-pulse'
-                          : 'bg-slate-200 text-slate-500'
+                          ? 'bg-white text-[#DD040F] font-black'
+                          : 'bg-neutral-200 text-neutral-500'
                       }`}
                     >
                       {isCompleted ? '✓' : idx + 1}
                     </div>
-                    <span className="font-extrabold text-xs text-slate-900">{step.label}</span>
-                    <span className="text-[10px] text-slate-500 mt-0.5">{step.desc}</span>
+                    <span className="font-extrabold text-xs">{step.label}</span>
+                    <span className={`text-[10px] mt-0.5 ${isCurrent || isCompleted ? 'text-neutral-200' : 'text-neutral-500'}`}>
+                      {step.desc}
+                    </span>
                   </div>
                 );
               })}
@@ -247,19 +240,19 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
           </div>
 
           {/* Interactive Quote Approval Section (Fase 3) */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+          <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b pb-3 border-neutral-100">
               <div>
-                <h4 className="font-extrabold text-sm text-slate-900">
+                <h4 className="font-extrabold text-sm text-[#010101]">
                   Desglose del Presupuesto & Aprobación en Línea
                 </h4>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-neutral-500">
                   Puedes autorizar o rechazar trabajos y refacciones desde tu teléfono.
                 </p>
               </div>
               <div className="text-right font-mono">
-                <span className="text-[10px] text-slate-400 block font-sans">Total Aprobado</span>
-                <span className="text-lg font-black text-orange-600">${matchedOrder.total.toLocaleString()} MXN</span>
+                <span className="text-[10px] text-neutral-400 block font-sans">Total Aprobado</span>
+                <span className="text-lg font-black text-[#DD040F]">${matchedOrder.total.toLocaleString()} MXN</span>
               </div>
             </div>
 
@@ -269,15 +262,15 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
                   key={item.id}
                   className={`p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3 transition ${
                     item.approvedByClient
-                      ? 'bg-white border-slate-200'
-                      : 'bg-red-50/40 border-red-200 text-slate-400'
+                      ? 'bg-white border-neutral-200'
+                      : 'bg-neutral-100 border-neutral-300 text-neutral-400'
                   }`}
                 >
                   <div className="space-y-0.5 max-w-md">
-                    <p className={`font-bold text-xs ${item.approvedByClient ? 'text-slate-900' : 'text-slate-500 line-through'}`}>
+                    <p className={`font-bold text-xs ${item.approvedByClient ? 'text-[#010101]' : 'text-neutral-500 line-through'}`}>
                       {item.description}
                     </p>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                    <div className="flex items-center gap-2 text-[11px] text-neutral-500">
                       <span className="capitalize">{item.type.replace('_', ' ')}</span>
                       <span>•</span>
                       <span>Cant: {item.quantity}</span>
@@ -287,7 +280,7 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-xs text-slate-900">
+                    <span className="font-mono font-bold text-xs text-[#010101]">
                       ${item.totalPrice.toLocaleString()}
                     </span>
 
@@ -296,8 +289,8 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
                       onClick={() => toggleItemApproval(matchedOrder.id, item.id, !item.approvedByClient)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                         item.approvedByClient
-                          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                          : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                          ? 'bg-[#010101] text-white hover:bg-neutral-800'
+                          : 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'
                       }`}
                     >
                       {item.approvedByClient ? '✓ Autorizado' : '✕ Rechazado'}
@@ -308,14 +301,14 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
             </div>
 
             {/* Total Balance */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+            <div className="bg-[#F8F9FA] p-4 rounded-xl border border-neutral-200 flex justify-between items-center text-xs">
               <div>
-                <span className="text-slate-500">Anticipos abonados: </span>
-                <strong className="font-mono text-emerald-700">${(matchedOrder.deposit || 0).toLocaleString()}</strong>
+                <span className="text-neutral-500">Anticipos abonados: </span>
+                <strong className="font-mono text-[#010101]">${(matchedOrder.deposit || 0).toLocaleString()}</strong>
               </div>
               <div>
-                <span className="text-slate-500">Saldo a liquidar al retirar: </span>
-                <strong className="font-mono text-slate-900 font-bold text-sm">
+                <span className="text-neutral-500">Saldo a liquidar al retirar: </span>
+                <strong className="font-mono text-[#DD040F] font-bold text-sm">
                   ${Math.max(0, matchedOrder.total - (matchedOrder.deposit || 0)).toLocaleString()} MXN
                 </strong>
               </div>
@@ -323,14 +316,14 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
           </div>
 
           {/* Digital Maintenance Book (Carnet Digital) */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-            <div className="flex items-center gap-2 border-b pb-3 border-slate-100">
-              <BookOpen className="w-5 h-5 text-orange-600" />
+          <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+            <div className="flex items-center gap-2 border-b pb-3 border-neutral-100">
+              <BookOpen className="w-5 h-5 text-[#DD040F]" />
               <div>
-                <h4 className="font-extrabold text-sm text-slate-900">
+                <h4 className="font-extrabold text-sm text-[#010101]">
                   Carnet de Mantenimiento Digital
                 </h4>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-neutral-500">
                   Historial garantizado de servicios para tu moto {matchedOrder.motorcycleInfo.model}
                 </p>
               </div>
@@ -338,17 +331,17 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
 
             <div className="space-y-3">
               {carnetOrders.map((ord) => (
-                <div key={ord.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                <div key={ord.id} className="p-3.5 rounded-xl bg-[#F8F9FA] border border-neutral-200 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-slate-800">{ord.id}</span>
-                    <span className="text-slate-500">
+                    <span className="font-mono font-bold text-[#010101]">{ord.id}</span>
+                    <span className="text-neutral-500">
                       {new Date(ord.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: '2-digit' })}
                     </span>
                   </div>
-                  <p className="font-semibold text-slate-800">"{ord.reasonForVisit}"</p>
-                  <div className="flex items-center justify-between text-slate-500 text-[11px] pt-1 border-t border-slate-200">
+                  <p className="font-semibold text-[#010101]">"{ord.reasonForVisit}"</p>
+                  <div className="flex items-center justify-between text-neutral-500 text-[11px] pt-1 border-t border-neutral-200">
                     <span>KM: {ord.checkIn.mileage.toLocaleString()} km</span>
-                    <span className="font-mono font-bold text-slate-900">${ord.total.toLocaleString()} MXN</span>
+                    <span className="font-mono font-bold text-[#010101]">${ord.total.toLocaleString()} MXN</span>
                   </div>
                 </div>
               ))}
@@ -357,33 +350,33 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
 
           {/* Customer Satisfaction Rating Section (Fase 7) */}
           {matchedOrder.status === 'entregado' && (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+            <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
               <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                <Star className="w-5 h-5 text-[#DD040F] fill-[#DD040F]" />
                 <div>
-                  <h4 className="font-extrabold text-sm text-slate-900">
+                  <h4 className="font-extrabold text-sm text-[#010101]">
                     Fase 7: Encuesta de Satisfacción Post-Venta
                   </h4>
-                  <p className="text-xs text-slate-500">¿Cómo has sentido tu motocicleta?</p>
+                  <p className="text-xs text-neutral-500">¿Cómo has sentido tu motocicleta?</p>
                 </div>
               </div>
 
               {ratingSubmitted || matchedOrder.satisfactionRating ? (
-                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-center space-y-1">
-                  <div className="flex items-center justify-center gap-1 text-amber-500">
+                <div className="p-4 rounded-xl bg-[#010101] text-white text-center space-y-1">
+                  <div className="flex items-center justify-center gap-1 text-[#DD040F]">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <Star
                         key={s}
                         className={`w-5 h-5 ${
                           s <= (matchedOrder.satisfactionRating?.stars || ratingStars)
-                            ? 'fill-amber-500'
-                            : 'text-slate-300'
+                            ? 'fill-[#DD040F]'
+                            : 'text-neutral-600'
                         }`}
                       />
                     ))}
                   </div>
-                  <p className="font-bold text-xs text-emerald-900">¡Muchas gracias por calificar nuestro servicio!</p>
-                  <p className="text-[11px] text-emerald-700">Tu retroalimentación nos ayuda a ser el mejor taller de motos.</p>
+                  <p className="font-bold text-xs text-white">¡Muchas gracias por calificar nuestro servicio!</p>
+                  <p className="text-[11px] text-[#AAA8A9]">Tu retroalimentación nos ayuda a ser el mejor taller de motos.</p>
                 </div>
               ) : (
                 <form onSubmit={handleRatingSubmit} className="space-y-3">
@@ -397,12 +390,12 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
                       >
                         <Star
                           className={`w-7 h-7 ${
-                            star <= ratingStars ? 'text-amber-500 fill-amber-500' : 'text-slate-300'
+                            star <= ratingStars ? 'text-[#DD040F] fill-[#DD040F]' : 'text-neutral-300'
                           }`}
                         />
                       </button>
                     ))}
-                    <span className="text-xs font-bold text-slate-700 ml-2">{ratingStars} de 5 Estrellas</span>
+                    <span className="text-xs font-bold text-[#010101] ml-2">{ratingStars} de 5 Estrellas</span>
                   </div>
 
                   <textarea
@@ -410,12 +403,12 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
                     placeholder="Escribe tus comentarios sobre el servicio recibido..."
                     value={ratingComment}
                     onChange={(e) => setRatingComment(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                    className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs text-[#010101]"
                   />
 
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition"
+                    className="px-4 py-2 bg-[#010101] hover:bg-neutral-800 text-white font-bold text-xs rounded-xl transition cursor-pointer"
                   >
                     Enviar Calificación
                   </button>
@@ -426,40 +419,40 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
 
           {/* Contact & Workshop Info Section */}
           {subTab === 'contact' && (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-              <div className="flex items-center gap-2 border-b pb-3 border-slate-100">
-                <ShieldCheck className="w-5 h-5 text-orange-600" />
+            <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+              <div className="flex items-center gap-2 border-b pb-3 border-neutral-100">
+                <ShieldCheck className="w-5 h-5 text-[#DD040F]" />
                 <div>
-                  <h4 className="font-extrabold text-sm text-slate-900">
+                  <h4 className="font-extrabold text-sm text-[#010101]">
                     Información del Taller & Políticas de Garantía
                   </h4>
-                  <p className="text-xs text-slate-500">{settings.workshopName}</p>
+                  <p className="text-xs text-neutral-500">{settings.workshopName}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                  <span className="font-bold text-slate-700 block">Canales de Contacto Directo:</span>
-                  <p className="text-slate-600"><strong>Dirección:</strong> {settings.address}</p>
-                  <p className="text-slate-600"><strong>Teléfono:</strong> {settings.phone}</p>
-                  <p className="text-slate-600"><strong>WhatsApp Oficial:</strong> {settings.whatsapp}</p>
-                  <p className="text-slate-600"><strong>Email:</strong> {settings.email}</p>
+                <div className="bg-[#F8F9FA] p-4 rounded-xl border border-neutral-200 space-y-2">
+                  <span className="font-bold text-[#010101] block">Canales de Contacto Directo:</span>
+                  <p className="text-neutral-600"><strong>Dirección:</strong> {settings.address}</p>
+                  <p className="text-neutral-600"><strong>Teléfono:</strong> {settings.phone}</p>
+                  <p className="text-neutral-600"><strong>WhatsApp Oficial:</strong> {settings.whatsapp}</p>
+                  <p className="text-neutral-600"><strong>Email:</strong> {settings.email}</p>
                   <div className="pt-2 flex gap-2">
                     <a
                       href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-bold text-xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#DD040F] text-white rounded-lg font-bold text-xs hover:bg-[#b5030c] transition"
                     >
                       <MessageCircle className="w-3.5 h-3.5" /> Enviar WhatsApp
                     </a>
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                  <span className="font-bold text-slate-700 block">Términos de Garantía:</span>
-                  <p className="text-slate-600 leading-relaxed">{settings.warrantyPolicy}</p>
-                  <span className="text-[10px] text-slate-400 block pt-1">
+                <div className="bg-[#F8F9FA] p-4 rounded-xl border border-neutral-200 space-y-2">
+                  <span className="font-bold text-[#010101] block">Términos de Garantía:</span>
+                  <p className="text-neutral-600 leading-relaxed">{settings.warrantyPolicy}</p>
+                  <span className="text-[10px] text-neutral-400 block pt-1">
                     Presenta tu comprobante digital o físico en cualquier momento para hacer válida tu garantía.
                   </span>
                 </div>
@@ -468,10 +461,10 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
           )}
         </div>
       ) : (
-        <div className="bg-white p-10 rounded-2xl border border-slate-200 text-center text-slate-400">
-          <Bike className="w-10 h-10 mx-auto text-slate-300 mb-2" />
-          <p className="font-bold text-slate-700 text-sm">No se encontró una orden activa con esa búsqueda</p>
-          <p className="text-xs text-slate-400 mt-1">Verifica tu número de placa o comunícate con recepción.</p>
+        <div className="bg-white p-10 rounded-2xl border border-neutral-200 text-center text-neutral-400">
+          <Bike className="w-10 h-10 mx-auto text-neutral-300 mb-2" />
+          <p className="font-bold text-[#010101] text-sm">No se encontró una orden activa con esa búsqueda</p>
+          <p className="text-xs text-neutral-400 mt-1">Verifica tu número de placa o comunícate con recepción.</p>
         </div>
       )}
     </div>

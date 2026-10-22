@@ -11,33 +11,33 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        injectRegister: null, // Prevents HMR websocket crashes when DISABLE_HMR is true
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
+        injectRegister: null,
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'qromotoslogo.png', 'qromotosicono.png'],
         manifest: {
           id: '/',
           name: 'CRM Motos - Taller de Motocicletas',
           short_name: 'CRM Motos',
           description: 'Sistema Integral de Gestión y CRM para Talleres de Motocicletas',
-          theme_color: '#ea580c',
-          background_color: '#0f172a',
+          theme_color: '#DD040F',
+          background_color: '#010101',
           display: 'standalone',
           start_url: '/',
           scope: '/',
           icons: [
             {
-              src: '/pwa-192x192.png',
+              src: '/qromotosicono.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-512x512.png',
+              src: '/qromotosicono.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-maskable-512x512.png',
+              src: '/qromotosicono.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',

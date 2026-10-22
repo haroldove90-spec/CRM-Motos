@@ -73,7 +73,7 @@ export const getNavItemsForRole = (role: UserRole): NavItem[] => {
         { id: 'status', label: 'Estatus en Vivo', icon: Smartphone },
         { id: 'quote', label: 'Aprobar Cotización', icon: Receipt },
         { id: 'carnet', label: 'Carnet de Servicio', icon: BookOpen },
-        { id: 'contact', label: 'Soporte WhatsApp', icon: MessageCircle },
+        { id: 'contact', label: 'Soporte & Garantía', icon: MessageCircle },
       ];
     default:
       return [];
@@ -89,10 +89,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const items = getNavItemsForRole(currentRole);
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-slate-900 border-r border-slate-800 text-slate-300 shrink-0 min-h-[calc(100vh-53px)] select-none">
+    <aside className="hidden md:flex flex-col w-64 bg-[#010101] border-r border-[#AAA8A9]/20 text-[#AAA8A9] shrink-0 min-h-[calc(100vh-53px)] select-none">
       {/* Role Title Bar */}
-      <div className="px-5 py-4 border-b border-slate-800/80">
-        <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
+      <div className="px-5 py-4 border-b border-[#AAA8A9]/20">
+        <span className="text-[10px] font-bold tracking-widest uppercase text-[#AAA8A9]">
           Módulos de Trabajo
         </span>
         <h2 className="text-sm font-extrabold text-white mt-0.5">
@@ -105,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Nav List */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = activeModule === item.id;
@@ -113,18 +113,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => onSelectModule(item.id)}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 isActive
-                  ? 'bg-orange-600 text-white shadow-md shadow-orange-600/30'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-[#DD040F] text-white shadow-md shadow-[#DD040F]/30'
+                  : 'text-[#AAA8A9] hover:bg-[#141414] hover:text-white'
               }`}
             >
               <div className="flex items-center gap-3">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#AAA8A9]'}`} />
                 <span>{item.label}</span>
               </div>
               {item.badge !== undefined && (
-                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-300">
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#181818] text-[#AAA8A9]">
                   {item.badge}
                 </span>
               )}
@@ -134,10 +134,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Bottom Session Footer */}
-      <div className="p-3 border-t border-slate-800">
+      <div className="p-3 border-t border-[#AAA8A9]/20">
         <button
           onClick={onLogout}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-red-400 hover:bg-slate-800/70 transition cursor-pointer"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#AAA8A9] hover:text-[#DD040F] hover:bg-[#141414] transition cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>Cambiar de Rol</span>

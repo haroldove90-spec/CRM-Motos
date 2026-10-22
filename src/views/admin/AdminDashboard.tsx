@@ -5,17 +5,12 @@ import {
   Wrench,
   DollarSign,
   Bike,
-  Clock,
   TrendingUp,
-  Users,
-  Settings,
   Plus,
   Trash2,
-  Edit2,
   Database,
   CheckCircle2,
   AlertCircle,
-  BarChart3,
   Percent,
 } from 'lucide-react';
 import { KanbanBoard } from '../../components/KanbanBoard';
@@ -34,16 +29,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     orders,
     staff,
     settings,
-    inventory,
     addStaff,
-    updateStaff,
     deleteStaff,
     updateSettings,
     testSupabaseConnection,
     clearSupabaseRecords,
     clearAllSampleData,
-    restoreSampleData,
-    isSampleDataCleared,
   } = useCRM();
 
   const [subTab, setSubTab] = useState<string>(activeModule);
@@ -176,11 +167,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   return (
     <div className="space-y-6">
       {/* Submodule Navigation */}
-      <div className="flex border-b border-slate-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
+      <div className="flex border-b border-neutral-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
         <button
           onClick={() => handleTabChange('dashboard')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'dashboard' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'dashboard' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Visión General & KPIs
@@ -188,7 +179,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <button
           onClick={() => handleTabChange('kanban')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'kanban' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'kanban' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Tablero OS en Vivo
@@ -196,7 +187,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <button
           onClick={() => handleTabChange('staff')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'staff' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'staff' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Personal & Comisiones
@@ -204,7 +195,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <button
           onClick={() => handleTabChange('reports')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'reports' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'reports' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Reportes & Rentabilidad
@@ -212,7 +203,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <button
           onClick={() => handleTabChange('settings')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'settings' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'settings' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Ajustes Taller & Supabase
@@ -224,64 +215,64 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="space-y-6">
           {/* Key KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between text-slate-500 mb-2">
+            <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs">
+              <div className="flex items-center justify-between text-neutral-500 mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider">Reparaciones Activas</span>
-                <Wrench className="w-4 h-4 text-orange-600" />
+                <Wrench className="w-4 h-4 text-[#DD040F]" />
               </div>
-              <p className="text-2xl font-black text-slate-900 font-mono">{kpis.activeRepairs}</p>
-              <span className="text-[10px] text-emerald-600 font-semibold">En proceso en taller</span>
+              <p className="text-2xl font-black text-[#010101] font-mono">{kpis.activeRepairs}</p>
+              <span className="text-[10px] text-[#010101] font-semibold">En proceso en taller</span>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between text-slate-500 mb-2">
+            <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs">
+              <div className="flex items-center justify-between text-neutral-500 mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider">Ingresos del Día</span>
-                <DollarSign className="w-4 h-4 text-emerald-600" />
+                <DollarSign className="w-4 h-4 text-[#010101]" />
               </div>
-              <p className="text-2xl font-black text-slate-900 font-mono">${kpis.todayRevenue.toLocaleString()}</p>
-              <span className="text-[10px] text-slate-500 font-medium">Cobrado en caja</span>
+              <p className="text-2xl font-black text-[#010101] font-mono">${kpis.todayRevenue.toLocaleString()}</p>
+              <span className="text-[10px] text-neutral-500 font-medium">Cobrado en caja</span>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between text-slate-500 mb-2">
+            <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs">
+              <div className="flex items-center justify-between text-neutral-500 mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider">Ingresos del Mes</span>
-                <TrendingUp className="w-4 h-4 text-blue-600" />
+                <TrendingUp className="w-4 h-4 text-[#DD040F]" />
               </div>
-              <p className="text-2xl font-black text-slate-900 font-mono">${kpis.monthRevenue.toLocaleString()}</p>
-              <span className="text-[10px] text-emerald-600 font-semibold">+18% vs mes anterior</span>
+              <p className="text-2xl font-black text-[#010101] font-mono">${kpis.monthRevenue.toLocaleString()}</p>
+              <span className="text-[10px] text-neutral-500 font-semibold">Total acumulado</span>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between text-slate-500 mb-2">
+            <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs">
+              <div className="flex items-center justify-between text-neutral-500 mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider">Motos Entregadas</span>
-                <Bike className="w-4 h-4 text-purple-600" />
+                <Bike className="w-4 h-4 text-[#010101]" />
               </div>
-              <p className="text-2xl font-black text-slate-900 font-mono">{kpis.deliveredThisMonth}</p>
-              <span className="text-[10px] text-purple-600 font-medium">Servicios concluidos</span>
+              <p className="text-2xl font-black text-[#010101] font-mono">{kpis.deliveredThisMonth}</p>
+              <span className="text-[10px] text-neutral-500 font-medium">Servicios concluidos</span>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between text-slate-500 mb-2">
+            <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs">
+              <div className="flex items-center justify-between text-neutral-500 mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider">Ticket Promedio</span>
-                <Percent className="w-4 h-4 text-amber-600" />
+                <Percent className="w-4 h-4 text-[#DD040F]" />
               </div>
-              <p className="text-2xl font-black text-slate-900 font-mono">${kpis.averageTicket.toLocaleString()}</p>
-              <span className="text-[10px] text-slate-500 font-medium">Por servicio moto</span>
+              <p className="text-2xl font-black text-[#010101] font-mono">${kpis.averageTicket.toLocaleString()}</p>
+              <span className="text-[10px] text-neutral-500 font-medium">Por servicio moto</span>
             </div>
           </div>
 
           {/* Graphical Charts & Analysis Section */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Revenue Trend Chart (SVG) */}
-            <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+            {/* Revenue Trend Chart */}
+            <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between border-b pb-3 border-neutral-100">
                 <div>
-                  <h3 className="font-extrabold text-sm text-slate-900">Rendimiento e Ingresos Semanales</h3>
-                  <p className="text-xs text-slate-500">Mano de obra vs Venta de Repuestos</p>
+                  <h3 className="font-extrabold text-sm text-[#010101]">Rendimiento e Ingresos Semanales</h3>
+                  <p className="text-xs text-neutral-500">Mano de obra vs Venta de Repuestos</p>
                 </div>
                 <div className="flex items-center gap-3 text-xs">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-orange-600 inline-block" /> Mano de Obra</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-800 inline-block" /> Refacciones</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#DD040F] inline-block" /> Mano de Obra</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#010101] inline-block" /> Refacciones</span>
                 </div>
               </div>
 
@@ -301,39 +292,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       {/* Bar for Parts */}
                       <div
                         style={{ height: `${(item.parts / 12000) * 110}px` }}
-                        className="w-full bg-slate-800 rounded-t-md hover:bg-slate-700 transition"
+                        className="w-full bg-[#010101] rounded-t-md hover:bg-neutral-800 transition"
                         title={`Refacciones: $${item.parts}`}
                       />
                       {/* Bar for Labor */}
                       <div
                         style={{ height: `${(item.labor / 12000) * 110}px` }}
-                        className="w-full bg-orange-600 rounded-t-md hover:bg-orange-500 transition"
+                        className="w-full bg-[#DD040F] rounded-t-md hover:bg-[#b5030c] transition"
                         title={`Mano de obra: $${item.labor}`}
                       />
                     </div>
-                    <span className="text-[11px] font-bold text-slate-500">{item.day}</span>
+                    <span className="text-[11px] font-bold text-neutral-500">{item.day}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Top Requested Services */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-              <div className="border-b pb-3 border-slate-100">
-                <h3 className="font-extrabold text-sm text-slate-900">Servicios Más Solicitados</h3>
-                <p className="text-xs text-slate-500">Mayor demanda en taller</p>
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+              <div className="border-b pb-3 border-neutral-100">
+                <h3 className="font-extrabold text-sm text-[#010101]">Servicios Más Solicitados</h3>
+                <p className="text-xs text-neutral-500">Mayor demanda en taller</p>
               </div>
 
               <div className="space-y-3">
                 {topServices.map(([servName, count], idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="font-semibold text-slate-800 truncate max-w-[180px]">{servName}</span>
-                      <span className="font-bold font-mono text-orange-600">{count} veces</span>
+                      <span className="font-semibold text-[#010101] truncate max-w-[180px]">{servName}</span>
+                      <span className="font-bold font-mono text-[#DD040F]">{count} veces</span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="w-full h-2 rounded-full bg-neutral-100 overflow-hidden">
                       <div
-                        className="h-full bg-orange-500 rounded-full"
+                        className="h-full bg-[#DD040F] rounded-full"
                         style={{ width: `${Math.min(100, (count / 10) * 100)}%` }}
                       />
                     </div>
@@ -353,12 +344,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-extrabold text-lg text-slate-900">Gestión de Personal & Comisiones</h3>
-              <p className="text-xs text-slate-500">Mecánicos, Recepción y Asignación de Comisiones</p>
+              <h3 className="font-extrabold text-lg text-[#010101]">Gestión de Personal & Comisiones</h3>
+              <p className="text-xs text-neutral-500">Mecánicos, Recepción y Asignación de Comisiones</p>
             </div>
             <button
               onClick={() => setShowAddStaff(!showAddStaff)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#DD040F] hover:bg-[#b5030c] text-white text-xs font-bold transition shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>{showAddStaff ? 'Cerrar Formulario' : 'Nuevo Integrante'}</span>
@@ -366,26 +357,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           {showAddStaff && (
-            <form onSubmit={handleSaveStaff} className="p-4 rounded-xl bg-white border border-slate-200 space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700">Registrar Usuario de Personal</h4>
+            <form onSubmit={handleSaveStaff} className="p-4 rounded-xl bg-white border border-neutral-200 space-y-3">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-[#010101]">Registrar Usuario de Personal</h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">Nombre Completo *</label>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Nombre Completo *</label>
                   <input
                     type="text"
                     required
                     value={newStaffName}
                     onChange={(e) => setNewStaffName(e.target.value)}
                     placeholder="Ej. Martín Becerra"
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-200 rounded-lg text-xs text-[#010101]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">Rol en Taller</label>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Rol en Taller</label>
                   <select
                     value={newStaffRole}
                     onChange={(e) => setNewStaffRole(e.target.value as any)}
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold"
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-200 rounded-lg text-xs font-bold text-[#010101]"
                   >
                     <option value="mechanic">Mecánico / Técnico</option>
                     <option value="reception">Recepción / Asesor</option>
@@ -394,52 +385,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">% Comisión por Mano de Obra</label>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">% Comisión por Mano de Obra</label>
                   <input
                     type="number"
                     min={0}
                     max={100}
                     value={newStaffCommission}
                     onChange={(e) => setNewStaffCommission(Number(e.target.value))}
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono"
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-200 rounded-lg text-xs font-mono text-[#010101]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">Teléfono WhatsApp *</label>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Teléfono WhatsApp *</label>
                   <input
                     type="tel"
                     required
                     value={newStaffPhone}
                     onChange={(e) => setNewStaffPhone(e.target.value)}
                     placeholder="+52 55..."
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-200 rounded-lg text-xs text-[#010101]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">Correo Electrónico</label>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Correo Electrónico</label>
                   <input
                     type="email"
                     value={newStaffEmail}
                     onChange={(e) => setNewStaffEmail(e.target.value)}
-                    placeholder="martin@crmmotos.com"
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                    placeholder="martin@qromotos.com"
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-200 rounded-lg text-xs text-[#010101]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">Especialidad Técnica</label>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Especialidad Técnica</label>
                   <input
                     type="text"
                     value={newStaffSpecialty}
                     onChange={(e) => setNewStaffSpecialty(e.target.value)}
                     placeholder="Ej. Motores 4T, Frenos ABS"
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-200 rounded-lg text-xs text-[#010101]"
                   />
                 </div>
               </div>
               <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition"
+                  className="px-4 py-2 bg-[#010101] hover:bg-neutral-800 text-white text-xs font-bold rounded-lg transition cursor-pointer"
                 >
                   Guardar Integrante
                 </button>
@@ -448,9 +439,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           )}
 
           {/* Staff Table with Commissions */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xs overflow-hidden">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-500 uppercase tracking-wider text-[11px]">
+              <thead className="bg-[#F8F9FA] border-b border-neutral-200 font-bold text-neutral-500 uppercase tracking-wider text-[11px]">
                 <tr>
                   <th className="p-3">Nombre</th>
                   <th className="p-3 text-center">Rol</th>
@@ -461,28 +452,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th className="p-3 text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-neutral-100">
                 {staffCommissions.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50/50">
-                    <td className="p-3 font-bold text-slate-900">{m.fullName}</td>
+                  <tr key={m.id} className="hover:bg-neutral-50">
+                    <td className="p-3 font-bold text-[#010101]">{m.fullName}</td>
                     <td className="p-3 text-center">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800 uppercase">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#010101] text-white uppercase">
                         {m.role}
                       </span>
                     </td>
-                    <td className="p-3 text-slate-600">
+                    <td className="p-3 text-neutral-600">
                       <p>{m.specialty || 'General'}</p>
-                      <p className="text-[10px] text-slate-400 font-mono">{m.phone}</p>
+                      <p className="text-[10px] text-neutral-400 font-mono">{m.phone}</p>
                     </td>
-                    <td className="p-3 text-center font-mono font-bold">{m.commissionPercentage}%</td>
-                    <td className="p-3 text-right font-mono font-bold text-emerald-700">
+                    <td className="p-3 text-center font-mono font-bold text-[#010101]">{m.commissionPercentage}%</td>
+                    <td className="p-3 text-right font-mono font-bold text-[#010101]">
                       ${m.commissionPay.toLocaleString()}
                     </td>
                     <td className="p-3 text-center font-mono font-semibold">{m.completedOrders}</td>
                     <td className="p-3 text-center">
                       <button
                         onClick={() => deleteStaff(m.id)}
-                        className="text-slate-400 hover:text-red-600 transition"
+                        className="text-neutral-400 hover:text-[#DD040F] transition"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -498,12 +489,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* SUBTAB: REPORTS & STATS */}
       {subTab === 'reports' && (
         <div className="space-y-5">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900">Histórico de Ventas: Repuestos vs Mano de Obra</h3>
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+            <h3 className="font-extrabold text-sm text-[#010101]">Histórico de Ventas: Repuestos vs Mano de Obra</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <span className="text-xs text-slate-500 block">Total Mano de Obra</span>
-                <p className="text-xl font-bold font-mono text-slate-900 mt-1">
+              <div className="bg-[#F8F9FA] p-4 rounded-xl border border-neutral-200">
+                <span className="text-xs text-neutral-500 block">Total Mano de Obra</span>
+                <p className="text-xl font-bold font-mono text-[#010101] mt-1">
                   $
                   {orders
                     .flatMap((o) => o.items)
@@ -513,9 +504,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   MXN
                 </p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <span className="text-xs text-slate-500 block">Total Venta de Refacciones</span>
-                <p className="text-xl font-bold font-mono text-slate-900 mt-1">
+              <div className="bg-[#F8F9FA] p-4 rounded-xl border border-neutral-200">
+                <span className="text-xs text-neutral-500 block">Total Venta de Refacciones</span>
+                <p className="text-xl font-bold font-mono text-[#010101] mt-1">
                   $
                   {orders
                     .flatMap((o) => o.items)
@@ -525,9 +516,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   MXN
                 </p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <span className="text-xs text-slate-500 block">Horas Totales Trabajadas</span>
-                <p className="text-xl font-bold font-mono text-orange-600 mt-1">
+              <div className="bg-[#F8F9FA] p-4 rounded-xl border border-neutral-200">
+                <span className="text-xs text-neutral-500 block">Horas Totales Trabajadas</span>
+                <p className="text-xl font-bold font-mono text-[#DD040F] mt-1">
                   {(
                     orders.reduce((acc, o) => acc + (o.totalWorkedSeconds || 0), 0) / 3600
                   ).toFixed(1)}{' '}
@@ -542,15 +533,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* SUBTAB: SETTINGS & SUPABASE */}
       {subTab === 'settings' && (
         <div className="space-y-6">
-          <form onSubmit={handleSaveSettings} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-            <div className="border-b pb-3 border-slate-100 flex items-center justify-between">
+          <form onSubmit={handleSaveSettings} className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+            <div className="border-b pb-3 border-neutral-100 flex items-center justify-between">
               <div>
-                <h3 className="font-extrabold text-base text-slate-900">Configuración Institucional del Taller</h3>
-                <p className="text-xs text-slate-500">Datos fiscales, tarifas de mano de obra y términos</p>
+                <h3 className="font-extrabold text-base text-[#010101]">Configuración Institucional del Taller</h3>
+                <p className="text-xs text-neutral-500">Datos fiscales, tarifas de mano de obra y términos</p>
               </div>
               <button
                 type="submit"
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl transition shadow-xs"
+                className="px-4 py-2 bg-[#DD040F] hover:bg-[#b5030c] text-white text-xs font-bold rounded-xl transition shadow-xs"
               >
                 Guardar Ajustes
               </button>
@@ -558,88 +549,88 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nombre Comercial del Taller</label>
+                <label className="block text-xs font-bold text-[#010101] mb-1">Nombre Comercial del Taller</label>
                 <input
                   type="text"
                   value={workshopName}
                   onChange={(e) => setWorkshopName(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs text-[#010101]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Razón Social / Legal</label>
+                <label className="block text-xs font-bold text-[#010101] mb-1">Razón Social / Legal</label>
                 <input
                   type="text"
                   value={legalName}
                   onChange={(e) => setLegalName(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs text-[#010101]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">RFC / Tax ID</label>
+                <label className="block text-xs font-bold text-[#010101] mb-1">RFC / Tax ID</label>
                 <input
                   type="text"
                   value={taxId}
                   onChange={(e) => setTaxId(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs font-mono text-[#010101]"
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">Dirección del Taller</label>
+                <label className="block text-xs font-bold text-[#010101] mb-1">Dirección del Taller</label>
                 <input
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs text-[#010101]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Tarifa Base Mano de Obra ($/hr)</label>
+                <label className="block text-xs font-bold text-[#010101] mb-1">Tarifa Base Mano de Obra ($/hr)</label>
                 <input
                   type="number"
                   value={laborRate}
                   onChange={(e) => setLaborRate(Number(e.target.value))}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs font-mono font-bold text-[#010101]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Teléfono</label>
+                <label className="block text-xs font-bold text-[#010101] mb-1">Teléfono</label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs text-[#010101]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">WhatsApp Notificaciones</label>
+                <label className="block text-xs font-bold text-[#010101] mb-1">WhatsApp Notificaciones</label>
                 <input
                   type="tel"
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs text-[#010101]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Políticas de Garantía del Taller</label>
+              <label className="block text-xs font-bold text-[#010101] mb-1">Políticas de Garantía del Taller</label>
               <textarea
                 rows={2}
                 value={warranty}
                 onChange={(e) => setWarranty(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs text-[#010101]"
               />
             </div>
           </form>
 
           {/* Supabase Integration & Database Controls */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-            <div className="border-b pb-3 border-slate-100 flex items-center gap-2">
-              <Database className="w-5 h-5 text-emerald-600" />
+          <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+            <div className="border-b pb-3 border-neutral-100 flex items-center gap-2">
+              <Database className="w-5 h-5 text-[#DD040F]" />
               <div>
-                <h3 className="font-extrabold text-base text-slate-900">Conexión a Base de Datos Supabase</h3>
-                <p className="text-xs text-slate-500">
+                <h3 className="font-extrabold text-base text-[#010101]">Conexión a Base de Datos Supabase</h3>
+                <p className="text-xs text-neutral-500">
                   Configura tu endpoint para persistencia en nube y borrado remoto de tablas cuando lo requieras.
                 </p>
               </div>
@@ -647,23 +638,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">SUPABASE_URL</label>
+                <label className="block text-xs font-bold text-[#010101] mb-1">SUPABASE_URL</label>
                 <input
                   type="url"
                   placeholder="https://xyzcompany.supabase.co"
                   value={sbUrl}
                   onChange={(e) => setSbUrl(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs font-mono text-[#010101]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">SUPABASE_ANON_KEY</label>
+                <label className="block text-xs font-bold text-[#010101] mb-1">SUPABASE_ANON_KEY</label>
                 <input
                   type="password"
                   placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
                   value={sbKey}
                   onChange={(e) => setSbKey(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs font-mono text-[#010101]"
                 />
               </div>
             </div>
@@ -671,10 +662,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {sbTestResult && (
               <div
                 className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
-                  sbTestResult.success ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-red-50 border-red-300 text-red-800'
+                  sbTestResult.success ? 'bg-neutral-100 border-neutral-400 text-[#010101]' : 'bg-[#DD040F]/10 border-[#DD040F]/40 text-[#DD040F]'
                 }`}
               >
-                {sbTestResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                {sbTestResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0 text-[#010101]" /> : <AlertCircle className="w-4 h-4 shrink-0 text-[#DD040F]" />}
                 <span>{sbTestResult.message}</span>
               </div>
             )}
@@ -684,7 +675,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 type="button"
                 onClick={handleTestSupabase}
                 disabled={sbLoading}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition"
+                className="px-4 py-2 bg-[#010101] hover:bg-neutral-800 text-white text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 {sbLoading ? 'Probando...' : 'Probar Conexión Supabase'}
               </button>
@@ -692,7 +683,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 type="button"
                 onClick={handleClearSupabase}
-                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 text-xs font-bold rounded-xl transition border border-red-300"
+                className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-[#DD040F] border border-neutral-300 text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Vaciar Registros en Supabase & Local
               </button>

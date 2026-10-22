@@ -6,13 +6,7 @@ import {
   Clock,
   Play,
   Pause,
-  Package,
-  CheckCircle2,
-  AlertCircle,
   Eye,
-  Camera,
-  Bike,
-  Plus,
   Send,
 } from 'lucide-react';
 import { OrderDetailModal } from '../../components/OrderDetailModal';
@@ -27,7 +21,7 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
   activeModule = 'my_jobs',
   onSelectModule,
 }) => {
-  const { orders, staff, inventory, toggleOrderTimer, updateOrderStatus, addItemToOrder, updateQualityChecklist } = useCRM();
+  const { orders, staff, inventory, toggleOrderTimer, addItemToOrder } = useCRM();
   const mechanics = staff.filter((s) => s.role === 'mechanic');
   const [selectedMechanicId, setSelectedMechanicId] = useState<string>(mechanics[0]?.id || '');
   const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
@@ -95,7 +89,7 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
       unitPrice: price,
       totalPrice: price * Number(reqQty),
       approvedByClient: true,
-      isDispensed: false, // In request state to warehouse
+      isDispensed: false,
     });
 
     setReqCustomDesc('');
@@ -107,20 +101,20 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Bar with Mechanic Selector */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-            <Wrench className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-[#010101] text-white flex items-center justify-center">
+            <Wrench className="w-5 h-5 text-[#DD040F]" />
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">
               Técnico en Turno
             </span>
             <div className="flex items-center gap-2">
               <select
                 value={selectedMechanicId}
                 onChange={(e) => setSelectedMechanicId(e.target.value)}
-                className="font-extrabold text-sm sm:text-base text-slate-900 bg-transparent border-none p-0 focus:outline-hidden cursor-pointer"
+                className="font-extrabold text-sm sm:text-base text-[#010101] bg-transparent border-none p-0 focus:outline-hidden cursor-pointer"
               >
                 <option value="">-- Ver Todas las Motos del Taller --</option>
                 {mechanics.map((m) => (
@@ -134,18 +128,18 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-800 text-xs font-bold border border-blue-200">
+          <span className="px-3 py-1 rounded-full bg-[#010101] text-white text-xs font-bold">
             {assignedOrders.length} Motos Asignadas
           </span>
         </div>
       </div>
 
       {/* Submodule tabs */}
-      <div className="flex border-b border-slate-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
+      <div className="flex border-b border-neutral-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
         <button
           onClick={() => handleTabChange('my_jobs')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'my_jobs' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'my_jobs' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Tablero Kanban Asignado
@@ -153,7 +147,7 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
         <button
           onClick={() => handleTabChange('stopwatch')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'stopwatch' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'stopwatch' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Control de Horas & Cronómetros
@@ -161,7 +155,7 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
         <button
           onClick={() => handleTabChange('parts_req')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'parts_req' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'parts_req' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Pedir Refacciones al Almacén
@@ -169,7 +163,7 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
         <button
           onClick={() => handleTabChange('quality')}
           className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'quality' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500'
+            subTab === 'quality' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
           }`}
         >
           Pruebas de Ruta & Calidad
@@ -187,11 +181,11 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
       {/* SUBTAB 2: STOPWATCH & TIME LOGS */}
       {subTab === 'stopwatch' && (
         <div className="space-y-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-            <h3 className="font-extrabold text-sm text-slate-900">
+          <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs">
+            <h3 className="font-extrabold text-sm text-[#010101]">
               Control de Horas & Cronómetro de Mano de Obra en Vivo
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-neutral-500">
               Registra los tiempos dedicados a cada motocicleta para garantizar comisiones justas y facturación exacta.
             </p>
           </div>
@@ -207,36 +201,36 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
               return (
                 <div
                   key={order.id}
-                  className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs space-y-4 hover:border-blue-400 transition"
+                  className="bg-white rounded-2xl p-5 border border-neutral-200 shadow-2xs space-y-4 hover:border-[#010101] transition"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800">
+                      <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-neutral-100 text-[#010101]">
                         {order.id}
                       </span>
-                      <h3 className="font-extrabold text-base text-slate-900 mt-1">
+                      <h3 className="font-extrabold text-base text-[#010101] mt-1">
                         {order.motorcycleInfo.brand} {order.motorcycleInfo.model}
                       </h3>
-                      <p className="text-xs text-slate-500 font-mono">
+                      <p className="text-xs text-neutral-500 font-mono">
                         Placa: <strong>{order.motorcycleInfo.plate}</strong> • Cliente: {order.customerName}
                       </p>
                     </div>
 
-                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 uppercase">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#010101] text-white uppercase">
                       {order.status.replace('_', ' ')}
                     </span>
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
-                    <span className="font-bold text-slate-500 block mb-0.5">Motivo / Falla reportada:</span>
-                    <p className="font-semibold text-slate-800">"{order.reasonForVisit}"</p>
+                  <div className="p-3 bg-[#F8F9FA] rounded-xl border border-neutral-100 text-xs">
+                    <span className="font-bold text-neutral-500 block mb-0.5">Motivo / Falla reportada:</span>
+                    <p className="font-semibold text-[#010101]">"{order.reasonForVisit}"</p>
                   </div>
 
                   {/* Stopwatch & Action Controls */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
                     <div className="flex items-center gap-2">
-                      <div className="font-mono font-bold text-sm bg-slate-100 px-3 py-1.5 rounded-xl text-slate-900 flex items-center gap-1.5">
-                        <Clock className={`w-4 h-4 ${order.isTimerRunning ? 'text-emerald-600 animate-spin' : 'text-slate-400'}`} />
+                      <div className="font-mono font-bold text-sm bg-neutral-100 px-3 py-1.5 rounded-xl text-[#010101] flex items-center gap-1.5">
+                        <Clock className={`w-4 h-4 ${order.isTimerRunning ? 'text-[#DD040F] animate-spin' : 'text-neutral-400'}`} />
                         <span>{formatTimer(liveSeconds)}</span>
                       </div>
 
@@ -251,8 +245,8 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
                         }
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
                           order.isTimerRunning
-                            ? 'bg-red-500 hover:bg-red-600 text-white'
-                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            ? 'bg-[#DD040F] hover:bg-[#b5030c] text-white'
+                            : 'bg-[#010101] hover:bg-neutral-800 text-white'
                         }`}
                       >
                         {order.isTimerRunning ? (
@@ -270,9 +264,9 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedOrder(order)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#010101] text-xs font-bold transition"
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5 text-[#DD040F]" />
                       <span>Diagnóstico</span>
                     </button>
                   </div>
@@ -286,21 +280,21 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
       {/* SUBTAB 3: PARTS REQUEST */}
       {subTab === 'parts_req' && (
         <div className="space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
             <div>
-              <h3 className="font-extrabold text-base text-slate-900">Solicitud de Refacciones al Almacén</h3>
-              <p className="text-xs text-slate-500">
+              <h3 className="font-extrabold text-base text-[#010101]">Solicitud de Refacciones al Almacén</h3>
+              <p className="text-xs text-neutral-500">
                 Pide piezas o consumibles directamente para que el almacenista las prepare y descuente del inventario.
               </p>
             </div>
 
-            <form onSubmit={handleSendPartRequest} className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <form onSubmit={handleSendPartRequest} className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-[#F8F9FA] p-4 rounded-xl border border-neutral-200">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Motocicleta / Orden *</label>
+                <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Motocicleta / Orden *</label>
                 <select
                   value={reqOrderId}
                   onChange={(e) => setReqOrderId(e.target.value)}
-                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold"
+                  className="w-full p-2 bg-white border border-neutral-200 rounded-lg text-xs font-bold text-[#010101]"
                 >
                   {assignedOrders.map((o) => (
                     <option key={o.id} value={o.id}>
@@ -311,11 +305,11 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Seleccionar del Catálogo</label>
+                <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Seleccionar del Catálogo</label>
                 <select
                   value={reqInvId}
                   onChange={(e) => setReqInvId(e.target.value)}
-                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs"
+                  className="w-full p-2 bg-white border border-neutral-200 rounded-lg text-xs text-[#010101]"
                 >
                   <option value="">-- O escribir personalizada --</option>
                   {inventory.map((i) => (
@@ -328,32 +322,32 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
 
               {!reqInvId && (
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">Descripción Manual</label>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Descripción Manual</label>
                   <input
                     type="text"
                     value={reqCustomDesc}
                     onChange={(e) => setReqCustomDesc(e.target.value)}
                     placeholder="Ej. Balero rueda delantera 6202"
-                    className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs"
+                    className="w-full p-2 bg-white border border-neutral-200 rounded-lg text-xs text-[#010101]"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Cantidad</label>
+                <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Cantidad</label>
                 <input
                   type="number"
                   min={1}
                   value={reqQty}
                   onChange={(e) => setReqQty(Number(e.target.value))}
-                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold"
+                  className="w-full p-2 bg-white border border-neutral-200 rounded-lg text-xs font-mono font-bold text-[#010101]"
                 />
               </div>
 
               <div className="sm:col-span-4 flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+                  className="flex items-center gap-1.5 px-5 py-2.5 bg-[#DD040F] hover:bg-[#b5030c] text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Enviar Pedido a Almacén</span>
@@ -367,33 +361,33 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
       {/* SUBTAB 4: QUALITY CHECK & ROAD TEST */}
       {subTab === 'quality' && (
         <div className="space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-            <h3 className="font-extrabold text-base text-slate-900">
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs">
+            <h3 className="font-extrabold text-base text-[#010101]">
               Control de Calidad, Inspección de Salida & Lavado
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-neutral-500">
               Asegura que todos los pernos tengan el torque adecuado y la prueba de ruta esté aprobada antes de entregar.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {assignedOrders.map((ord) => (
-              <div key={ord.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+              <div key={ord.id} className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="font-mono text-xs font-bold text-slate-800">{ord.id}</span>
-                    <h4 className="font-black text-sm text-slate-900">{ord.motorcycleInfo.brand} {ord.motorcycleInfo.model}</h4>
+                    <span className="font-mono text-xs font-bold text-[#010101]">{ord.id}</span>
+                    <h4 className="font-black text-sm text-[#010101]">{ord.motorcycleInfo.brand} {ord.motorcycleInfo.model}</h4>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ord.washedAndCleaned ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'}`}>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ord.washedAndCleaned ? 'bg-[#010101] text-white' : 'bg-neutral-100 text-neutral-600'}`}>
                     {ord.washedAndCleaned ? '🚿 Lavada' : 'Sin Lavar'}
                   </span>
                 </div>
 
                 <div className="space-y-1.5 text-xs">
                   {(ord.qualityChecklist || []).map((chk) => (
-                    <div key={chk.key} className="flex items-center justify-between p-1.5 rounded bg-slate-50 border border-slate-100">
-                      <span className="text-slate-700">{chk.label}</span>
-                      <span className={`font-bold ${chk.checked ? 'text-emerald-700' : 'text-slate-400'}`}>
+                    <div key={chk.key} className="flex items-center justify-between p-1.5 rounded bg-[#F8F9FA] border border-neutral-100">
+                      <span className="text-neutral-700">{chk.label}</span>
+                      <span className={`font-bold ${chk.checked ? 'text-[#010101]' : 'text-neutral-400'}`}>
                         {chk.checked ? '✓ OK' : 'Pendiente'}
                       </span>
                     </div>
@@ -403,7 +397,7 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
                 <div className="flex justify-end pt-2">
                   <button
                     onClick={() => setSelectedOrder(ord)}
-                    className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition"
+                    className="px-3 py-1.5 bg-[#010101] text-white rounded-lg text-xs font-bold hover:bg-neutral-800 transition cursor-pointer"
                   >
                     Abrir Hoja de Calidad
                   </button>
