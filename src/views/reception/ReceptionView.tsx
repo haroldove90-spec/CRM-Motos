@@ -5,7 +5,9 @@ import { KanbanBoard } from '../../components/KanbanBoard';
 import { OrderDetailModal } from '../../components/OrderDetailModal';
 import { HojaDeServicioPDFModal } from '../../components/HojaDeServicioPDFModal';
 import { EditOrderModal } from '../../components/EditOrderModal';
-import { ServiceOrder, Customer, Motorcycle } from '../../types/crm';
+import { ProfecoContractPDFModal } from '../../components/ProfecoContractPDFModal';
+import { ProfecoContractFormModal } from '../../components/ProfecoContractFormModal';
+import { ServiceOrder, Customer, Motorcycle, ProfecoContract } from '../../types/crm';
 import {
   Plus,
   Search,
@@ -21,6 +23,9 @@ import {
   User,
   Clock,
   Download,
+  ShieldCheck,
+  Printer,
+  Sparkles,
 } from 'lucide-react';
 import { TicketModal } from '../../components/TicketModal';
 import { WhatsAppModal } from '../../components/WhatsAppModal';
@@ -38,12 +43,14 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
     customers,
     motorcycles,
     orders,
+    profecoContracts,
     addCustomer,
     updateCustomer,
     deleteCustomer,
     updateMotorcycle,
     deleteMotorcycle,
     deleteServiceOrder,
+    deleteProfecoContract,
   } = useCRM();
 
   const [subTab, setSubTab] = useState<string>(activeModule);
@@ -65,6 +72,13 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
   const [editOrder, setEditOrder] = useState<ServiceOrder | null>(null);
   const [ticketOrder, setTicketOrder] = useState<ServiceOrder | null>(null);
   const [whatsAppOrder, setWhatsAppOrder] = useState<ServiceOrder | null>(null);
+
+  // PROFECO Modals & Filters
+  const [viewingProfecoContract, setViewingProfecoContract] = useState<ProfecoContract | null>(null);
+  const [editingProfecoContract, setEditingProfecoContract] = useState<ProfecoContract | null>(null);
+  const [isCreatingProfecoContract, setIsCreatingProfecoContract] = useState(false);
+  const [profecoSearch, setProfecoSearch] = useState('');
+  const [profecoStatusFilter, setProfecoStatusFilter] = useState('all');
 
   // Search & Filter in Historial
   const [historySearch, setHistorySearch] = useState('');
@@ -103,6 +117,28 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
       o.motorcycleInfo.plate.toLowerCase().includes(q)
     );
   });
+
+  // Filtered PROFECO contracts
+  const filteredProfecoContracts = profecoContracts.filter((c) => {
+    if (profecoStatusFilter !== 'all' && c.status !== profecoStatusFilter) return false;
+    if (!profecoSearch.trim()) return true;
+    const q = profecoSearch.toLowerCase();
+    return (
+      c.contractNumber.toLowerCase().includes(q) ||
+      c.customerName.toLowerCase().includes(q) ||
+      c.customerPhone.includes(q) ||
+      c.motorcycleBrand.toLowerCase().includes(q) ||
+      c.motorcycleModel.toLowerCase().includes(q) ||
+      c.motorcyclePlate.toLowerCase().includes(q) ||
+      (c.orderId && c.orderId.toLowerCase().includes(q))
+    );
+  });
+
+  const handleDeleteProfecoContract = (id: string, folio: string) => {
+    if (window.confirm(`¿Confirmas que deseas eliminar el Contrato PROFECO con Folio ${folio}? Esta acción no se puede deshacer.`)) {
+      deleteProfecoContract(id);
+    }
+  };
 
   const filteredCustomers = customers.filter(
     (c) =>
@@ -193,6 +229,15 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         >
           <Calendar className="w-3.5 h-3.5" />
           <span>Historial Check-in ({orders.length})</span>
+        </button>
+        <button
+          onClick={() => handleTabChange('profeco')}
+          className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 ${
+            subTab === 'profeco' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Contrato PROFECO ({profecoContracts.length})</span>
         </button>
         <button
           onClick={() => handleTabChange('kanban')}
@@ -418,6 +463,237 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
                         No se encontraron registros de Check-in con el filtro seleccionado.
                       </td>
                     </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUBTAB: CONTRATOS PROFECO (NUEVO MÓDULO SOLICITADO) */}
+      {subTab === 'profeco' && (
+        <div className="space-y-4">
+          {/* Header & Actions */}
+          <div className="bg-white p-5 rounded-2xl border border-neutral-300 shadow-2xs flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#DD040F]" />
+                <h3 className="font-black text-base text-[#010101]">
+                  Contratos de Adhesión PROFECO (NOM-174-SCFI-2007)
+                </h3>
+              </div>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Genera, edita, firma y exporta en formato legal tamaño carta (1 hoja) con las 20 cláusulas y declaraciones oficiales.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search */}
+              <div className="relative w-60 sm:w-72">
+                <input
+                  type="text"
+                  placeholder="Buscar por cliente, folio, placa, VIN..."
+                  value={profecoSearch}
+                  onChange={(e) => setProfecoSearch(e.target.value)}
+                  className="w-full px-3 py-1.5 pl-8 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-[#010101] placeholder:text-neutral-400 focus:outline-hidden focus:border-[#DD040F]"
+                />
+                <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-2" />
+              </div>
+
+              {/* Status filter */}
+              <select
+                value={profecoStatusFilter}
+                onChange={(e) => setProfecoStatusFilter(e.target.value)}
+                className="px-2.5 py-1.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs font-semibold text-[#010101] focus:outline-hidden focus:border-[#DD040F]"
+              >
+                <option value="all">Todos los estatus</option>
+                <option value="firmado">Firmados</option>
+                <option value="borrador">Borradores</option>
+                <option value="cancelado">Cancelados</option>
+              </select>
+
+              {/* Create new contract button */}
+              <button
+                onClick={() => {
+                  setEditingProfecoContract(null);
+                  setIsCreatingProfecoContract(true);
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#DD040F] hover:bg-[#b5030c] text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nuevo Contrato PROFECO</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white p-3.5 rounded-xl border border-neutral-200 shadow-2xs">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Total Contratos</span>
+              <p className="text-xl font-black text-[#010101] font-mono mt-0.5">{profecoContracts.length}</p>
+            </div>
+            <div className="bg-white p-3.5 rounded-xl border border-neutral-200 shadow-2xs">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Firmados de Conformidad</span>
+              <p className="text-xl font-black text-green-700 font-mono mt-0.5">
+                {profecoContracts.filter((c) => c.status === 'firmado').length}
+              </p>
+            </div>
+            <div className="bg-white p-3.5 rounded-xl border border-neutral-200 shadow-2xs">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Garantía Legal Vigente</span>
+              <p className="text-xl font-black text-[#DD040F] font-mono mt-0.5">90 Días</p>
+            </div>
+            <div className="bg-white p-3.5 rounded-xl border border-neutral-200 shadow-2xs">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Formato Aprobado</span>
+              <p className="text-xs font-black text-[#010101] mt-1.5 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span>Carta 1 Hoja (PROFECO)</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Contracts Table */}
+          <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-neutral-50 text-[10px] font-bold uppercase tracking-wider text-neutral-500 border-b border-neutral-200">
+                    <th className="py-3 px-4">Folio / Reg. PROFECO</th>
+                    <th className="py-3 px-3">Fecha</th>
+                    <th className="py-3 px-3">Consumidor (Cliente)</th>
+                    <th className="py-3 px-3">Motocicleta</th>
+                    <th className="py-3 px-3">Presupuesto & Anticipo</th>
+                    <th className="py-3 px-3">Estatus</th>
+                    <th className="py-3 px-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 font-medium">
+                  {filteredProfecoContracts.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-neutral-400">
+                        <ShieldCheck className="w-10 h-10 mx-auto mb-2 opacity-30 text-[#DD040F]" />
+                        <p className="text-sm font-bold text-neutral-600">No se encontraron contratos PROFECO</p>
+                        <p className="text-xs text-neutral-400 mt-1">
+                          Genera un nuevo contrato o pre-llénalo directamente desde una orden activa de servicio.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setEditingProfecoContract(null);
+                            setIsCreatingProfecoContract(true);
+                          }}
+                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#DD040F] text-white rounded-lg text-xs font-bold hover:bg-red-700 transition"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Crear Primer Contrato</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredProfecoContracts.map((c) => (
+                      <tr key={c.id} className="hover:bg-neutral-50/70 transition">
+                        {/* Folio */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-[#DD040F] shrink-0" />
+                            <div>
+                              <span className="font-mono font-black text-[#010101] text-xs block">
+                                {c.contractNumber}
+                              </span>
+                              <span className="text-[10px] text-neutral-500 font-mono">
+                                Reg: {c.profecoRegistrationNumber}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Fecha */}
+                        <td className="py-3 px-3 text-neutral-700 text-xs whitespace-nowrap">
+                          {c.date}
+                        </td>
+
+                        {/* Consumidor */}
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-[#010101]">{c.customerName}</div>
+                          <div className="text-[10px] text-neutral-500 font-mono">{c.customerPhone}</div>
+                        </td>
+
+                        {/* Motocicleta */}
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-[#010101]">
+                            {c.motorcycleBrand} {c.motorcycleModel} ({c.motorcycleYear})
+                          </div>
+                          <div className="text-[10px] text-neutral-500 font-mono">
+                            Placa: <strong className="text-neutral-700">{c.motorcyclePlate || 'S/P'}</strong> • {c.motorcycleColor || 'N/E'}
+                          </div>
+                        </td>
+
+                        {/* Presupuesto */}
+                        <td className="py-3 px-3">
+                          <div className="font-mono font-bold text-[#010101]">
+                            ${c.agreedBudget.toLocaleString('es-MX')}
+                          </div>
+                          <div className="text-[10px] text-green-700 font-mono">
+                            Anticipo: ${c.deposit.toLocaleString('es-MX')}
+                          </div>
+                        </td>
+
+                        {/* Estatus */}
+                        <td className="py-3 px-3">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              c.status === 'firmado'
+                                ? 'bg-green-100 text-green-800 border border-green-200'
+                                : c.status === 'borrador'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                : 'bg-red-100 text-red-800 border border-red-200'
+                            }`}
+                          >
+                            {c.status}
+                          </span>
+                        </td>
+
+                        {/* Acciones */}
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* Ver / Imprimir Carta */}
+                            <button
+                              onClick={() => setViewingProfecoContract(c)}
+                              className="p-1.5 rounded-lg bg-neutral-100 hover:bg-[#010101] hover:text-white text-neutral-700 transition"
+                              title="Ver Contrato Carta e Imprimir"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Descargar PDF Carta */}
+                            <button
+                              onClick={() => setViewingProfecoContract(c)}
+                              className="p-1.5 rounded-lg bg-neutral-100 hover:bg-[#DD040F] hover:text-white text-[#DD040F] transition"
+                              title="Descargar PDF en Hoja Tamaño Carta"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Editar Contrato */}
+                            <button
+                              onClick={() => setEditingProfecoContract(c)}
+                              className="p-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition"
+                              title="Editar datos del contrato"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Borrar */}
+                            <button
+                              onClick={() => handleDeleteProfecoContract(c.id, c.contractNumber)}
+                              className="p-1.5 rounded-lg bg-neutral-100 hover:bg-red-100 hover:text-red-700 text-neutral-400 transition"
+                              title="Eliminar contrato"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -924,6 +1200,30 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
           order={whatsAppOrder}
           onClose={() => setWhatsAppOrder(null)}
           defaultType={whatsAppOrder.status === 'listo_entrega' ? 'ready' : whatsAppOrder.status === 'esperando_aprobacion' ? 'quote' : 'checkin'}
+        />
+      )}
+
+      {/* 6. PROFECO Legal Contract Letter PDF Modal */}
+      {viewingProfecoContract && (
+        <ProfecoContractPDFModal
+          contract={viewingProfecoContract}
+          onClose={() => setViewingProfecoContract(null)}
+        />
+      )}
+
+      {/* 7. PROFECO Contract Form Modal (Create or Edit) */}
+      {(isCreatingProfecoContract || editingProfecoContract) && (
+        <ProfecoContractFormModal
+          existingContract={editingProfecoContract}
+          onClose={() => {
+            setIsCreatingProfecoContract(false);
+            setEditingProfecoContract(null);
+          }}
+          onSaved={(savedContract) => {
+            setIsCreatingProfecoContract(false);
+            setEditingProfecoContract(null);
+            setViewingProfecoContract(savedContract);
+          }}
         />
       )}
     </div>

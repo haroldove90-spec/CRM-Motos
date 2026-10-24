@@ -234,6 +234,15 @@ export interface WorkshopSettings {
   warrantyPolicy: string;
   supabaseUrl?: string;
   supabaseAnonKey?: string;
+  // Ajustes de Contrato de Adhesión PROFECO
+  profecoRegistrationNumber?: string;
+  profecoRegistrationDate?: string;
+  profecoRepresentative?: string;
+  profecoScheduleAttention?: string;
+  profecoDefaultWarrantyDays?: number;
+  profecoDefaultPenaltyPercent?: number;
+  profecoDefaultTestRadiusKm?: number;
+  profecoDefaultCancellationDays?: number;
 }
 
 export interface KPIData {
@@ -243,4 +252,53 @@ export interface KPIData {
   deliveredThisMonth: number;
   pendingServices: number;
   averageTicket: number;
+}
+
+export interface ProfecoContract {
+  id: string;                      // e.g. "PFC-2026-001"
+  contractNumber: string;          // e.g. "PFC-2026-001"
+  orderId?: string;                // ID de orden de servicio ligada
+  date: string;                    // YYYY-MM-DD
+  status: 'firmado' | 'borrador' | 'cancelado';
+  // I. Prestador del Servicio
+  providerName: string;
+  providerRepresentative: string;
+  providerRfc: string;
+  providerAddress: string;
+  providerPhone: string;
+  providerEmail: string;
+  profecoRegistrationNumber: string;
+  profecoRegistrationDate: string;
+  scheduleAttention: string;
+  // II. El Consumidor
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  customerAddress: string;
+  customerRfc?: string;
+  // Motocicleta
+  motorcycleBrand: string;
+  motorcycleModel: string;
+  motorcycleYear: number | string;
+  motorcyclePlate: string;
+  motorcycleVin: string;
+  motorcycleColor: string;
+  motorcycleMileage: number | string;
+  // Presupuesto y Condiciones
+  serviceDescription: string;
+  agreedBudget: number;            // Presupuesto total con IVA
+  deposit: number;                 // Anticipo pagado
+  pendingBalance: number;          // Saldo al retirar
+  deliveryDate: string;            // Fecha estimada / compromiso
+  warrantyDays: number;            // Default 90 días (Cláusula 7)
+  testRadiusKm: number;            // Default 5 km (Cláusula 8)
+  penaltyPercent: number;          // Default 15% (Cláusula 11)
+  storageWaitHours: number;        // Default 48 hrs (Cláusula 12)
+  cancellationDays: number;        // Default 5 días (Cláusula 17)
+  notes?: string;
+  // Firmas
+  consumerSignature?: string;
+  providerSignature?: string;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -12,6 +12,7 @@ import {
   PaymentRecord,
   QualityCheckItem,
   KPIData,
+  ProfecoContract,
 } from '../types/crm';
 import {
   initialCustomers,
@@ -20,6 +21,7 @@ import {
   initialInventory,
   initialStaff,
   initialWorkshopSettings,
+  initialProfecoContracts,
 } from '../data/sampleData';
 
 interface CRMContextType {
@@ -69,6 +71,12 @@ interface CRMContextType {
   updateStaff: (id: string, updates: Partial<StaffUser>) => void;
   deleteStaff: (id: string) => void;
 
+  // Contratos de Adhesión PROFECO
+  profecoContracts: ProfecoContract[];
+  addProfecoContract: (contract: Omit<ProfecoContract, 'id' | 'createdAt' | 'updatedAt'>) => ProfecoContract;
+  updateProfecoContract: (id: string, updates: Partial<ProfecoContract>) => void;
+  deleteProfecoContract: (id: string) => void;
+
   // Settings & Supabase
   updateSettings: (updates: Partial<WorkshopSettings>) => void;
   testSupabaseConnection: () => Promise<{ success: boolean; message: string }>;
@@ -88,6 +96,7 @@ const STORAGE_KEYS = {
   INVENTORY: 'crm_motos_inventory_v1',
   STAFF: 'crm_motos_staff_v1',
   SETTINGS: 'crm_motos_settings_v1',
+  PROFECO_CONTRACTS: 'crm_motos_profeco_contracts_v1',
   SAMPLE_CLEARED: 'crm_motos_sample_cleared',
 };
 
@@ -146,6 +155,15 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return sampleCleared ? [] : initialStaff;
   });
 
+  const [profecoContracts, setProfecoContracts] = useState<ProfecoContract[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.PROFECO_CONTRACTS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialProfecoContracts;
+  });
+
   const [settings, setSettings] = useState<WorkshopSettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (saved) {
@@ -181,6 +199,10 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [staff]);
 
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.PROFECO_CONTRACTS, JSON.stringify(profecoContracts));
+  }, [profecoContracts]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   }, [settings]);
 
@@ -195,6 +217,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMotorcycles([]);
     setOrders([]);
     setInventory([]);
+    setProfecoContracts([]);
     // Keep at least one admin staff if empty so the app remains usable
     setStaff([
       {
@@ -219,6 +242,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders(initialOrders);
     setInventory(initialInventory);
     setStaff(initialStaff);
+    setProfecoContracts(initialProfecoContracts);
     setSettings(initialWorkshopSettings);
   };
 
@@ -650,6 +674,44 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSettings((prev) => ({ ...prev, ...updates }));
   };
 
+  // Contratos de Adhesión PROFECO CRUD
+  const addProfecoContract = (
+    contractData: Omit<ProfecoContract, 'id' | 'createdAt' | 'updatedAt'>
+  ): ProfecoContract => {
+    const nextNum = profecoContracts.length + 1;
+    const year = new Date().getFullYear();
+    const contractNumber =
+      contractData.contractNumber ||
+      `PFC-${year}-${String(nextNum).padStart(3, '0')}`;
+    const newContract: ProfecoContract = {
+      ...contractData,
+      id: `PFC-${Date.now()}`,
+      contractNumber,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setProfecoContracts((prev) => [newContract, ...prev]);
+    return newContract;
+  };
+
+  const updateProfecoContract = (id: string, updates: Partial<ProfecoContract>) => {
+    setProfecoContracts((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              ...updates,
+              updatedAt: new Date().toISOString(),
+            }
+          : c
+      )
+    );
+  };
+
+  const deleteProfecoContract = (id: string) => {
+    setProfecoContracts((prev) => prev.filter((c) => c.id !== id));
+  };
+
   // Supabase Integration & Cleaning
   const testSupabaseConnection = async (): Promise<{ success: boolean; message: string }> => {
     if (!settings.supabaseUrl || !settings.supabaseAnonKey) {
@@ -761,6 +823,10 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addStaff,
         updateStaff,
         deleteStaff,
+        profecoContracts,
+        addProfecoContract,
+        updateProfecoContract,
+        deleteProfecoContract,
         updateSettings,
         testSupabaseConnection,
         clearSupabaseRecords,

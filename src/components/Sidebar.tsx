@@ -20,6 +20,8 @@ import {
   BookOpen,
   MessageCircle,
   LogOut,
+  ShieldCheck,
+  Calendar,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -43,13 +45,16 @@ export const getNavItemsForRole = (role: UserRole): NavItem[] => {
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'kanban', label: 'Tablero OS', icon: KanbanSquare },
         { id: 'staff', label: 'Personal & Comisiones', icon: Users },
+        { id: 'profeco', label: 'Contratos PROFECO', icon: ShieldCheck },
         { id: 'reports', label: 'Reportes & Métricas', icon: BarChart3 },
         { id: 'settings', label: 'Ajustes & Supabase', icon: Settings },
       ];
     case 'reception':
       return [
-        { id: 'kanban', label: 'Órdenes Activas', icon: KanbanSquare },
         { id: 'checkin', label: 'Recepción (Check-in)', icon: ClipboardPlus },
+        { id: 'historial', label: 'Historial Check-in', icon: Calendar },
+        { id: 'profeco', label: 'Contrato PROFECO', icon: ShieldCheck },
+        { id: 'kanban', label: 'Órdenes Activas', icon: KanbanSquare },
         { id: 'customers', label: 'Clientes CRM', icon: Users },
         { id: 'motorcycles', label: 'Motos', icon: Bike },
         { id: 'billing', label: 'Cotización & Cobro', icon: Receipt },
