@@ -4,21 +4,24 @@ import {
   Customer,
   Motorcycle,
   FuelLevel,
-  DamageReport,
   ServiceOrder,
+  MotoInventoryItemState,
+  ServiceActivitiesState,
+  DiagramPoint,
 } from '../types/crm';
 import {
   User,
   Bike,
-  Fuel,
-  AlertTriangle,
-  Camera,
   CheckCircle2,
   Plus,
   Trash2,
   Printer,
+  Download,
   MessageCircle,
+  FileText,
+  AlertCircle,
 } from 'lucide-react';
+import { HojaDeServicioPDFModal } from './HojaDeServicioPDFModal';
 import { TicketModal } from './TicketModal';
 import { WhatsAppModal } from './WhatsAppModal';
 
@@ -26,182 +29,272 @@ interface CheckInWizardProps {
   onOrderCreated?: (order: ServiceOrder) => void;
 }
 
-const DAMAGE_ZONES: { id: DamageReport['zone']; label: string }[] = [
-  { id: 'frente', label: 'Frente / Faro / Cúpula' },
-  { id: 'manubrio', label: 'Manubrio / Espejos / Manetas' },
-  { id: 'tanque', label: 'Tanque de Gasolina' },
-  { id: 'carenado_izq', label: 'Carenado / Tapa Izquierda' },
-  { id: 'carenado_der', label: 'Carenado / Tapa Derecha' },
-  { id: 'escape', label: 'Escape / Mofle' },
-  { id: 'rueda_del', label: 'Rueda / Suspensión Delantera' },
-  { id: 'rueda_tras', label: 'Rueda / Suspensión Trasera' },
-  { id: 'asiento_colin', label: 'Asiento / Colín / Stop' },
+const INVENTORY_KEYS: { key: keyof MotoInventoryItemState; label: string }[] = [
+  { key: 'espejos', label: 'ESPEJOS' },
+  { key: 'asiento', label: 'ASIENTO' },
+  { key: 'faroDelantero', label: 'FARO DELANTERO' },
+  { key: 'luzFaroTrasero', label: 'LUZ DE FARO TRASERO' },
+  { key: 'direccionales', label: 'DIRECCIONALES' },
+  { key: 'cubiertasCompletas', label: 'CUBIERTAS COMPLETAS' },
+  { key: 'taponGasolina', label: 'TAPÓN DE GASOLINA' },
+  { key: 'tacometros', label: 'TACOMETROS' },
+  { key: 'pedales', label: 'PEDALES' },
+  { key: 'parabrisas', label: 'PARABRISAS' },
+  { key: 'claxon', label: 'CLAXON' },
 ];
 
-const ACCESSORY_OPTIONS = [
-  'Casco',
-  'Llave de baúl / maletero',
-  'Portaequipaje / Top Case',
-  'Candado de disco con alarma',
-  'Soporte para celular',
-  'Documentos de la moto',
-  'Impermeable',
+const SERVICE_ACTIVITIES_LIST: { key: keyof ServiceActivitiesState; label: string }[] = [
+  { key: 'ajusteFrenos', label: 'Ajuste de frenos' },
+  { key: 'ajusteLubricacionCadena', label: 'Ajuste y lubricación de cadena (según modelo)' },
+  { key: 'revisionNiveles', label: 'Revisión de niveles (líquido frenos, presión llantas)' },
+  { key: 'carburacion', label: 'Carburación' },
+  { key: 'cambioAceiteMotor', label: 'Cambio de aceite de motor' },
+  { key: 'cambioBujia', label: 'Cambio de bujía' },
+  { key: 'lubricacionAjusteChicotes', label: 'Lubricación y ajuste de chicotes' },
+  { key: 'revisionPunterias', label: 'Revisión de punterías' },
+  { key: 'revisionLimpiezaSedazoAceite', label: 'Revisión y limpieza del sedazo del aceite' },
+  { key: 'revisionLimpiezaFiltroAire', label: 'Revisión y limpieza del filtro de aire' },
+  { key: 'ajusteTornilleria', label: 'Ajuste de tornillería (tazas, ejes, estribos, barras, soportes)' },
+  { key: 'verificacionElectrica', label: 'Verificación eléctrica (carga de batería, luces, claxon)' },
 ];
 
 export const CheckInWizard: React.FC<CheckInWizardProps> = ({ onOrderCreated }) => {
   const { customers, motorcycles, staff, addCustomer, addMotorcycle, createServiceOrder } = useCRM();
 
-  // Search & Selection State
+  // Mode: existing vs new client/bike
   const [clientSearch, setClientSearch] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedMotoId, setSelectedMotoId] = useState<string>('');
   const [isNewClient, setIsNewClient] = useState(false);
   const [isNewMoto, setIsNewMoto] = useState(false);
 
-  // New Client Form
-  const [newClientName, setNewClientName] = useState('');
-  const [newClientPhone, setNewClientPhone] = useState('');
-  const [newClientEmail, setNewClientEmail] = useState('');
+  // Client Data Form
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
 
-  // New Moto Form
-  const [newMotoBrand, setNewMotoBrand] = useState('Yamaha');
-  const [newMotoModel, setNewMotoModel] = useState('');
-  const [newMotoYear, setNewMotoYear] = useState<number>(new Date().getFullYear());
-  const [newMotoDisplacement, setNewMotoDisplacement] = useState('250cc');
-  const [newMotoPlate, setNewMotoPlate] = useState('');
-  const [newMotoVin, setNewMotoVin] = useState('');
-  const [newMotoColor, setNewMotoColor] = useState('Negro');
+  // Motorcycle Data Form (Matching Hoja de Servicio)
+  const [motoBrand, setMotoBrand] = useState('Yamaha');
+  const [motoModel, setMotoModel] = useState('');
+  const [motoYear, setMotoYear] = useState<number>(new Date().getFullYear());
+  const [motoPlate, setMotoPlate] = useState('');
+  const [motoVin, setMotoVin] = useState('');
+  const [motoMileage, setMotoMileage] = useState<number>(12000);
+  const [motoDisplacement, setMotoDisplacement] = useState('250cc');
+  const [motoColor, setMotoColor] = useState('Negro');
 
-  // Check-In Visual Details
-  const [mileage, setMileage] = useState<number>(10000);
+  // Inventario de la Moto (SI, NO, ROTO O DAÑADO)
+  const [motoInventory, setMotoInventory] = useState<MotoInventoryItemState>({
+    espejos: 'si',
+    asiento: 'si',
+    faroDelantero: 'si',
+    luzFaroTrasero: 'si',
+    direccionales: 'si',
+    cubiertasCompletas: 'si',
+    taponGasolina: 'si',
+    tacometros: 'si',
+    pedales: 'si',
+    parabrisas: 'no',
+    claxon: 'si',
+  });
+
+  // Actividades del Servicio
+  const [serviceActivities, setServiceActivities] = useState<ServiceActivitiesState>({
+    ajusteFrenos: true,
+    ajusteLubricacionCadena: true,
+    revisionNiveles: true,
+    carburacion: false,
+    cambioAceiteMotor: true,
+    cambioBujia: false,
+    lubricacionAjusteChicotes: true,
+    revisionPunterias: false,
+    revisionLimpiezaSedazoAceite: true,
+    revisionLimpiezaFiltroAire: true,
+    ajusteTornilleria: true,
+    verificacionElectrica: true,
+  });
+
+  // Diagrams: Fuel Gauge & Damage Points on Motorcycle Diagram
   const [fuelLevel, setFuelLevel] = useState<FuelLevel>(50);
-  const [reasonForVisit, setReasonForVisit] = useState('');
-  const [priority, setPriority] = useState<'normal' | 'alta' | 'urgente'>('normal');
+  const [diagramPoints, setDiagramPoints] = useState<DiagramPoint[]>([]);
+  const [newPointLabel, setNewPointLabel] = useState('Rayón en tanque');
+
+  // Observations & Service Items (Conceptos)
+  const [observations, setObservations] = useState('');
   const [assignedMechanicId, setAssignedMechanicId] = useState('');
-  const [notes, setNotes] = useState('');
+  const [priority, setPriority] = useState<'normal' | 'alta' | 'urgente'>('normal');
 
-  // Damages
-  const [damages, setDamages] = useState<DamageReport[]>([]);
-  const [newDamageZone, setNewDamageZone] = useState<DamageReport['zone']>('carenado_der');
-  const [newDamageType, setNewDamageType] = useState<DamageReport['type']>('rayón');
-  const [newDamageSeverity, setNewDamageSeverity] = useState<DamageReport['severity']>('leve');
-  const [newDamageNotes, setNewDamageNotes] = useState('');
-
-  // Accessories Left
-  const [accessoriesLeft, setAccessoriesLeft] = useState<string[]>(['Casco']);
-
-  // Photos
-  const [photos, setPhotos] = useState<string[]>([
-    'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=800&q=80',
+  // Concept rows (matching CLAVE | No. | CONCEPTO | IMPORTE)
+  const [concepts, setConcepts] = useState<
+    { id: string; clave: string; no: number; concepto: string; importe: number }[]
+  >([
+    {
+      id: 'c-1',
+      clave: 'SRV-01',
+      no: 1,
+      concepto: 'Servicio Preventivo Integral & Afinación Mayor',
+      importe: 650,
+    },
+    {
+      id: 'c-2',
+      clave: 'REF-02',
+      no: 1,
+      concepto: 'Aceite Sintético Motul 7100 4T 10W40 (1L)',
+      importe: 320,
+    },
   ]);
 
-  // Modals after creation
+  const [newConceptClave, setNewConceptClave] = useState('SRV-03');
+  const [newConceptQty, setNewConceptQty] = useState(1);
+  const [newConceptDesc, setNewConceptDesc] = useState('');
+  const [newConceptPrice, setNewConceptPrice] = useState(250);
+
+  // Post-Creation Modals
   const [createdOrder, setCreatedOrder] = useState<ServiceOrder | null>(null);
+  const [showHojaPDFModal, setShowHojaPDFModal] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
-  // Filtered clients for quick search
+  // Filtered customer search
   const filteredCustomers = customers.filter(
     (c) =>
       c.fullName.toLowerCase().includes(clientSearch.toLowerCase()) ||
-      c.phone.includes(clientSearch) ||
-      c.whatsapp.includes(clientSearch)
+      c.phone.includes(clientSearch)
   );
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
   const customerMotorcycles = motorcycles.filter((m) => m.customerId === selectedCustomerId);
-  const selectedMotorcycle = motorcycles.find((m) => m.id === selectedMotoId);
 
-  const handleAddDamage = () => {
-    if (!newDamageNotes && !newDamageZone) return;
-    setDamages((prev) => [
+  // Handle inventory check change
+  const handleInventoryChange = (key: keyof MotoInventoryItemState, val: 'si' | 'no' | 'roto_danado') => {
+    setMotoInventory((prev) => ({ ...prev, [key]: val }));
+  };
+
+  // Handle service activity toggle
+  const toggleActivity = (key: keyof ServiceActivitiesState) => {
+    setServiceActivities((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Add click damage point on motorcycle diagram
+  const handleDiagramClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+
+    const newPt: DiagramPoint = {
+      id: `pt-${Date.now()}`,
+      x,
+      y,
+      label: newPointLabel || 'Detalle visual',
+    };
+    setDiagramPoints((prev) => [...prev, newPt]);
+  };
+
+  const removeDiagramPoint = (id: string) => {
+    setDiagramPoints((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // Add concept row
+  const handleAddConcept = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newConceptDesc.trim()) return;
+    setConcepts((prev) => [
       ...prev,
       {
-        zone: newDamageZone,
-        type: newDamageType,
-        severity: newDamageSeverity,
-        notes: newDamageNotes || 'Inspección de entrada',
+        id: `concept-${Date.now()}`,
+        clave: newConceptClave,
+        no: Number(newConceptQty),
+        concepto: newConceptDesc.trim(),
+        importe: Number(newConceptPrice),
       },
     ]);
-    setNewDamageNotes('');
+    setNewConceptDesc('');
+    setNewConceptClave(`SRV-${concepts.length + 2}`);
   };
 
-  const handleRemoveDamage = (index: number) => {
-    setDamages((prev) => prev.filter((_, i) => i !== index));
+  const handleRemoveConcept = (id: string) => {
+    setConcepts((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const toggleAccessory = (item: string) => {
-    setAccessoriesLeft((prev) =>
-      prev.includes(item) ? prev.filter((a) => a !== item) : [...prev, item]
-    );
-  };
+  // Financial calculations
+  const subtotal = concepts.reduce((acc, c) => acc + c.importe, 0);
+  const tax = Math.round(subtotal * 0.16);
+  const total = subtotal + tax;
 
-  const handleAddPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          setPhotos((prev) => [...prev, reader.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
+  // Submit and create official Service Order
   const handleSubmitCheckIn = (e: React.FormEvent) => {
     e.preventDefault();
 
     let finalCustomer: Customer;
     let finalMoto: Motorcycle;
 
-    // 1. Process customer
+    // 1. Resolve Customer
     if (isNewClient || !selectedCustomer) {
-      if (!newClientName || !newClientPhone) {
-        alert('Por favor completa el nombre y teléfono del cliente.');
+      if (!clientName || !clientPhone) {
+        alert('Por favor indica el nombre y teléfono del cliente.');
         return;
       }
       const created = addCustomer({
-        fullName: newClientName,
-        phone: newClientPhone,
-        whatsapp: newClientPhone,
-        email: newClientEmail,
+        fullName: clientName,
+        phone: clientPhone,
+        whatsapp: clientPhone,
+        email: clientEmail,
       });
       finalCustomer = created.customer;
     } else {
       finalCustomer = selectedCustomer;
     }
 
-    // 2. Process Motorcycle
-    if (isNewMoto || !selectedMotorcycle) {
-      if (!newMotoPlate || !newMotoModel) {
-        alert('Por favor completa la placa y modelo de la motocicleta.');
+    // 2. Resolve Motorcycle
+    if (isNewMoto || !selectedMotoId) {
+      if (!motoModel || !motoBrand) {
+        alert('Por favor indica la marca y modelo de la motocicleta.');
         return;
       }
       const createdM = addMotorcycle(finalCustomer.id, {
-        brand: newMotoBrand,
-        model: newMotoModel,
-        year: newMotoYear,
-        displacement: newMotoDisplacement,
-        plate: newMotoPlate.toUpperCase(),
-        vin: newMotoVin.toUpperCase() || 'NO-REGISTRADO',
-        color: newMotoColor,
-        currentMileage: mileage,
+        brand: motoBrand,
+        model: motoModel,
+        year: motoYear,
+        displacement: motoDisplacement,
+        plate: motoPlate.toUpperCase() || 'SIN-PLACA',
+        vin: motoVin.toUpperCase() || 'NO-REGISTRADO',
+        color: motoColor,
+        currentMileage: motoMileage,
       });
       finalMoto = createdM;
     } else {
-      finalMoto = selectedMotorcycle;
-    }
-
-    if (!reasonForVisit.trim()) {
-      alert('Por favor ingresa el motivo de la visita o servicio solicitado.');
-      return;
+      const foundMoto = motorcycles.find((m) => m.id === selectedMotoId);
+      finalMoto = foundMoto || {
+        id: `moto-${Date.now()}`,
+        customerId: finalCustomer.id,
+        brand: motoBrand,
+        model: motoModel,
+        year: motoYear,
+        displacement: motoDisplacement,
+        plate: motoPlate,
+        vin: motoVin,
+        color: motoColor,
+        currentMileage: motoMileage,
+      };
     }
 
     const assignedStaff = staff.find((s) => s.id === assignedMechanicId);
 
-    // Create Service Order
+    // 3. Build Service Items from concepts table
+    const serviceItems = concepts.map((c, idx) => ({
+      id: `item-${Date.now()}-${idx}`,
+      clave: c.clave,
+      rowNumber: c.no,
+      description: c.concepto,
+      type: (c.concepto.toLowerCase().includes('aceite') || c.concepto.toLowerCase().includes('filtro') || c.concepto.toLowerCase().includes('bujía') || c.concepto.toLowerCase().includes('pastilla') ? 'repuesto' : 'mano_de_obra') as 'repuesto' | 'mano_de_obra',
+      quantity: c.no,
+      unitPrice: c.no > 0 ? c.importe / c.no : c.importe,
+      totalPrice: c.importe,
+      approvedByClient: true,
+      isDispensed: false,
+    }));
+
+    // 4. Create Service Order with all official Hoja de Servicio fields
     const order = createServiceOrder({
       customerId: finalCustomer.id,
       customerName: finalCustomer.fullName,
@@ -209,81 +302,90 @@ export const CheckInWizard: React.FC<CheckInWizardProps> = ({ onOrderCreated }) 
       customerEmail: finalCustomer.email,
       motorcycleId: finalMoto.id,
       motorcycleInfo: {
-        brand: finalMoto.brand,
-        model: finalMoto.model,
-        year: finalMoto.year,
-        displacement: finalMoto.displacement,
-        plate: finalMoto.plate,
-        vin: finalMoto.vin,
-        color: finalMoto.color,
+        brand: finalMoto.brand || motoBrand,
+        model: finalMoto.model || motoModel,
+        year: finalMoto.year || motoYear,
+        displacement: finalMoto.displacement || motoDisplacement,
+        plate: finalMoto.plate || motoPlate,
+        vin: finalMoto.vin || motoVin,
+        color: finalMoto.color || motoColor,
       },
-      reasonForVisit,
+      reasonForVisit: observations || 'Mantenimiento Preventivo / Hoja de Servicio',
       priority,
       status: assignedMechanicId ? 'en_diagnostico' : 'pendiente',
       assignedMechanicId: assignedMechanicId || undefined,
       assignedMechanicName: assignedStaff?.fullName,
       checkIn: {
         fuelLevel,
-        mileage,
-        damages,
-        accessoriesLeft,
-        photos,
-        notes,
+        mileage: motoMileage,
+        damages: diagramPoints.map((dp) => ({
+          zone: 'carenado_der',
+          type: 'rayón',
+          severity: 'leve',
+          notes: dp.label,
+        })),
+        accessoriesLeft: [],
+        photos: [],
+        notes: observations,
+        // Official Sheet Data
+        motoInventory,
+        serviceActivities,
+        diagramPoints,
+        entryDate: new Date().toISOString(),
+        observations,
       },
-      items: [
-        {
-          id: `item-init-${Date.now()}`,
-          description: `Revisión inicial y diagnóstico técnico: ${reasonForVisit}`,
-          type: 'mano_de_obra',
-          quantity: 1,
-          unitPrice: 350,
-          totalPrice: 350,
-          approvedByClient: true,
-        },
-      ],
-      subtotal: 350,
-      tax: 56,
-      total: 406,
+      items: serviceItems,
+      subtotal,
+      tax,
+      total,
       deposit: 0,
     });
 
     setCreatedOrder(order);
+    setShowHojaPDFModal(true);
     if (onOrderCreated) {
       onOrderCreated(order);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Title */}
-      <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header Banner */}
+      <div className="bg-[#010101] p-5 sm:p-6 rounded-3xl text-white border border-neutral-800 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#DD040F] block">
-            Fase 1 • Recepción del Vehículo
-          </span>
-          <h2 className="text-xl font-black text-[#010101] mt-0.5">
-            Nuevo Check-in de Motocicleta
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#DD040F]" />
+            <span className="text-[#DD040F] font-black text-xs uppercase tracking-widest">
+              Formato Oficial QROMOTOS
+            </span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black">
+            Hoja de Servicio & Check-in de Unidades
           </h2>
-          <p className="text-xs text-neutral-500 mt-1">
-            Registro ágil del cliente, vehículo e inventario de entrada visual con fotografías.
+          <p className="text-xs text-[#AAA8A9] mt-0.5">
+            Captura ágil del inventario de la moto, actividades del servicio, diagrama visual de daños y conceptos cotizados.
           </p>
         </div>
+
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 text-xs font-bold rounded-full bg-[#010101] text-white">
-            Paso 1 de 7
-          </span>
+          <div className="border border-neutral-700 bg-neutral-900 px-4 py-2 rounded-xl text-center">
+            <span className="text-[10px] text-neutral-400 block font-bold uppercase tracking-wider">Folio Siguiente</span>
+            <span className="text-lg font-mono font-black text-[#DD040F]"># 1001+</span>
+          </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmitCheckIn} className="space-y-6">
-        {/* Step 1: Client Selection */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b pb-3 border-neutral-100">
+        {/* SECCIÓN 1: DATOS DEL CLIENTE Y MOTOCICLETA */}
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-300 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b pb-3 border-neutral-200">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-[#010101] text-white flex items-center justify-center">
                 <User className="w-4 h-4 text-[#DD040F]" />
               </div>
-              <h3 className="font-bold text-sm text-[#010101]">1. Datos del Cliente</h3>
+              <h3 className="font-black text-sm text-[#010101] uppercase tracking-wide">
+                1. Datos del Cliente & Unidad (Encabezado)
+              </h3>
             </div>
             <button
               type="button"
@@ -300,28 +402,40 @@ export const CheckInWizard: React.FC<CheckInWizardProps> = ({ onOrderCreated }) 
           {!isNewClient ? (
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">
-                  Buscar por Nombre o Teléfono
+                <label className="block text-xs font-bold text-neutral-700 mb-1">
+                  Buscar Cliente por Nombre o Teléfono
                 </label>
                 <input
                   type="text"
-                  placeholder="Ej: Alejandro Morales o 55 1234..."
+                  placeholder="Ej: Alejandro Morales o 442 123..."
                   value={clientSearch}
                   onChange={(e) => setClientSearch(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-300 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
                 />
               </div>
 
               {filteredCustomers.length > 0 && !selectedCustomerId && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto p-1">
                   {filteredCustomers.map((cust) => (
                     <button
                       type="button"
                       key={cust.id}
                       onClick={() => {
                         setSelectedCustomerId(cust.id);
+                        setClientName(cust.fullName);
+                        setClientPhone(cust.phone);
+                        setClientEmail(cust.email);
                         if (cust.motorcycleIds.length > 0) {
                           setSelectedMotoId(cust.motorcycleIds[0]);
+                          const m = motorcycles.find((x) => x.id === cust.motorcycleIds[0]);
+                          if (m) {
+                            setMotoBrand(m.brand);
+                            setMotoModel(m.model);
+                            setMotoYear(m.year);
+                            setMotoPlate(m.plate);
+                            setMotoVin(m.vin);
+                            setMotoMileage(m.currentMileage);
+                          }
                         }
                       }}
                       className="p-3 text-left rounded-xl border border-neutral-200 hover:border-[#DD040F] bg-white transition cursor-pointer"
@@ -334,11 +448,11 @@ export const CheckInWizard: React.FC<CheckInWizardProps> = ({ onOrderCreated }) 
               )}
 
               {selectedCustomer && (
-                <div className="p-3 rounded-xl bg-neutral-100 border border-neutral-300 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-neutral-100 border border-neutral-300 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-bold uppercase text-[#DD040F]">Cliente Seleccionado</span>
+                    <span className="text-[10px] font-bold uppercase text-[#DD040F]">Cliente Activo</span>
                     <p className="font-extrabold text-sm text-[#010101]">{selectedCustomer.fullName}</p>
-                    <p className="text-xs text-neutral-600 font-mono">{selectedCustomer.phone} • {selectedCustomer.email}</p>
+                    <p className="text-xs text-neutral-600 font-mono">Tel: {selectedCustomer.phone}</p>
                   </div>
                   <button
                     type="button"
@@ -353,220 +467,363 @@ export const CheckInWizard: React.FC<CheckInWizardProps> = ({ onOrderCreated }) 
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Nombre Completo *</label>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Nombre Completo *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej: Carlos Santillán"
-                  value={newClientName}
-                  onChange={(e) => setNewClientName(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                  placeholder="Ej: Juan Carlos Pérez"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-300 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">WhatsApp / Celular *</label>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Teléfono / WhatsApp *</label>
                 <input
                   type="tel"
                   required
-                  placeholder="Ej: +52 55 1234 5678"
-                  value={newClientPhone}
-                  onChange={(e) => setNewClientPhone(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                  placeholder="Ej: (442) 234 5678"
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(e.target.value)}
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-300 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Correo Electrónico</label>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Correo Electrónico</label>
                 <input
                   type="email"
-                  placeholder="carlos@gmail.com"
-                  value={newClientEmail}
-                  onChange={(e) => setNewClientEmail(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                  placeholder="cliente@correo.com"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-300 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
                 />
               </div>
             </div>
           )}
-        </div>
 
-        {/* Step 2: Motorcycle Selection / Registration */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b pb-3 border-neutral-100">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[#010101] text-white flex items-center justify-center">
-                <Bike className="w-4 h-4 text-[#AAA8A9]" />
-              </div>
-              <h3 className="font-bold text-sm text-[#010101]">2. Datos de la Motocicleta</h3>
-            </div>
-            {selectedCustomer && (
-              <button
-                type="button"
-                onClick={() => setIsNewMoto(!isNewMoto)}
-                className="text-xs font-bold text-[#DD040F] hover:underline cursor-pointer"
-              >
-                {isNewMoto ? '← Usar Moto Registrada' : '+ Agregar Nueva Moto'}
-              </button>
-            )}
-          </div>
-
-          {!isNewMoto && customerMotorcycles.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {customerMotorcycles.map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => {
-                    setSelectedMotoId(m.id);
-                    setMileage(m.currentMileage);
-                  }}
-                  className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                    selectedMotoId === m.id
-                      ? 'border-[#010101] bg-[#010101] text-white shadow-xs'
-                      : 'border-neutral-200 bg-white hover:border-neutral-300 text-[#010101]'
-                  }`}
-                >
-                  <p className="font-extrabold text-sm">{m.brand} {m.model} ({m.year})</p>
-                  <p className={`text-xs font-mono ${selectedMotoId === m.id ? 'text-[#AAA8A9]' : 'text-neutral-600'}`}>
-                    Placa: <strong>{m.plate}</strong> • {m.displacement}
-                  </p>
-                  <p className={`text-[11px] mt-1 ${selectedMotoId === m.id ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                    KM actual: {m.currentMileage.toLocaleString()} km
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
+          {/* Motorcycle Fields matching sheet: Nombre | Tel | Marca | Serie | Kilometraje | Modelo */}
+          <div className="pt-2 border-t border-neutral-200">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Marca *</label>
-                <select
-                  value={newMotoBrand}
-                  onChange={(e) => setNewMotoBrand(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
-                >
-                  <option value="Yamaha">Yamaha</option>
-                  <option value="Honda">Honda</option>
-                  <option value="KTM">KTM</option>
-                  <option value="Kawasaki">Kawasaki</option>
-                  <option value="Suzuki">Suzuki</option>
-                  <option value="Bajaj">Bajaj</option>
-                  <option value="BMW">BMW Motorrad</option>
-                  <option value="Italika">Italika</option>
-                  <option value="Ducati">Ducati</option>
-                  <option value="Triumph">Triumph</option>
-                  <option value="Vento">Vento</option>
-                  <option value="Otra">Otra</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Modelo *</label>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Marca *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej: MT-07 o Duke 390"
-                  value={newMotoModel}
-                  onChange={(e) => setNewMotoModel(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                  placeholder="Yamaha / Honda / Suzuki..."
+                  value={motoBrand}
+                  onChange={(e) => setMotoBrand(e.target.value)}
+                  className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs font-bold text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Año</label>
-                <input
-                  type="number"
-                  value={newMotoYear}
-                  onChange={(e) => setNewMotoYear(Number(e.target.value))}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Cilindraje</label>
-                <input
-                  type="text"
-                  placeholder="Ej: 300cc"
-                  value={newMotoDisplacement}
-                  onChange={(e) => setNewMotoDisplacement(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Placa *</label>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Modelo *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej: 84K-DF-3"
-                  value={newMotoPlate}
-                  onChange={(e) => setNewMotoPlate(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm font-mono font-bold uppercase text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                  placeholder="Ej: FZ 2.0 / MT-07 / Pulsar 200"
+                  value={motoModel}
+                  onChange={(e) => setMotoModel(e.target.value)}
+                  className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Color</label>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Número de Serie (VIN)</label>
                 <input
                   type="text"
-                  placeholder="Ej: Negro Mate"
-                  value={newMotoColor}
-                  onChange={(e) => setNewMotoColor(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                  placeholder="Serie de chasis..."
+                  value={motoVin}
+                  onChange={(e) => setMotoVin(e.target.value)}
+                  className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs font-mono uppercase text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
                 />
               </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Número de Serie / VIN</label>
-                <input
-                  type="text"
-                  placeholder="Ej: JYARN53E8PA04..."
-                  value={newMotoVin}
-                  onChange={(e) => setNewMotoVin(e.target.value)}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm font-mono uppercase text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Step 3: Check-in Visual */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-5">
-          <div className="border-b pb-3 border-neutral-100 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#010101] text-white flex items-center justify-center">
-              <Fuel className="w-4 h-4 text-[#DD040F]" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-[#010101]">3. Inspección Visual de Entrada (Check-in)</h3>
-              <p className="text-xs text-neutral-500">Condición física al ingresar al taller</p>
-            </div>
-          </div>
-
-          {/* Kilometraje y Gasolina */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-[#010101] mb-1">
-                Kilometraje del Odómetro *
-              </label>
-              <div className="relative">
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Kilometraje *</label>
                 <input
                   type="number"
                   required
                   min={0}
-                  value={mileage}
-                  onChange={(e) => setMileage(Number(e.target.value))}
-                  className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm font-mono font-bold text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                  value={motoMileage}
+                  onChange={(e) => setMotoMileage(Number(e.target.value))}
+                  className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs font-mono font-bold text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-[#AAA8A9] font-bold">KM</span>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Placa</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 84K-DF-3"
+                  value={motoPlate}
+                  onChange={(e) => setMotoPlate(e.target.value)}
+                  className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs font-mono font-bold uppercase text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Año</label>
+                <input
+                  type="number"
+                  value={motoYear}
+                  onChange={(e) => setMotoYear(Number(e.target.value))}
+                  className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Cilindraje</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 250cc"
+                  value={motoDisplacement}
+                  onChange={(e) => setMotoDisplacement(e.target.value)}
+                  className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">Color</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Rojo / Negro"
+                  value={motoColor}
+                  onChange={(e) => setMotoColor(e.target.value)}
+                  className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SECCIÓN 2: INVENTARIO DE LA MOTO & ACTIVIDADES DEL SERVICIO */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Columna Izquierda: INVENTARIO DE LA MOTO (SI / NO / ROTO O DAÑADO) */}
+          <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-neutral-300 shadow-2xs space-y-3">
+            <div className="border-b pb-2 border-neutral-200">
+              <h3 className="font-black text-xs sm:text-sm text-[#010101] uppercase tracking-wide">
+                INVENTARIO DE LA MOTO
+              </h3>
+              <p className="text-[11px] text-neutral-500">
+                Marca el estado de cada componente al ingresar la motocicleta.
+              </p>
+            </div>
+
+            {/* Headers: SI | NO | ROTO */}
+            <div className="flex items-center justify-between text-[10px] font-black text-neutral-500 uppercase px-1 border-b border-neutral-100 pb-1">
+              <span>Componente</span>
+              <div className="flex gap-4 text-center w-32 justify-end pr-1">
+                <span className="w-6 text-center">SI</span>
+                <span className="w-6 text-center">NO</span>
+                <span className="w-12 text-center text-[9px] text-[#DD040F]">ROTO</span>
               </div>
             </div>
 
-            {/* Fuel Level Selector */}
+            <div className="divide-y divide-neutral-100">
+              {INVENTORY_KEYS.map((item) => {
+                const currentVal = motoInventory[item.key];
+                return (
+                  <div key={item.key} className="flex items-center justify-between py-1.5 hover:bg-neutral-50 px-1 rounded-md">
+                    <span className="text-xs font-bold text-[#010101]">{item.label}</span>
+                    <div className="flex gap-4 text-center w-32 justify-end items-center pr-1">
+                      {/* SI */}
+                      <label className="cursor-pointer w-6 flex justify-center">
+                        <input
+                          type="radio"
+                          name={`inv-${item.key}`}
+                          value="si"
+                          checked={currentVal === 'si'}
+                          onChange={() => handleInventoryChange(item.key, 'si')}
+                          className="accent-[#010101] w-4 h-4 cursor-pointer"
+                        />
+                      </label>
+                      {/* NO */}
+                      <label className="cursor-pointer w-6 flex justify-center">
+                        <input
+                          type="radio"
+                          name={`inv-${item.key}`}
+                          value="no"
+                          checked={currentVal === 'no'}
+                          onChange={() => handleInventoryChange(item.key, 'no')}
+                          className="accent-[#010101] w-4 h-4 cursor-pointer"
+                        />
+                      </label>
+                      {/* ROTO O DAÑADO */}
+                      <label className="cursor-pointer w-12 flex justify-center">
+                        <input
+                          type="radio"
+                          name={`inv-${item.key}`}
+                          value="roto_danado"
+                          checked={currentVal === 'roto_danado'}
+                          onChange={() => handleInventoryChange(item.key, 'roto_danado')}
+                          className="accent-[#DD040F] w-4 h-4 cursor-pointer"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Columna Derecha: ACTIVIDADES DEL SERVICIO */}
+          <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-neutral-300 shadow-2xs space-y-3">
+            <div className="border-b pb-2 border-neutral-200">
+              <h3 className="font-black text-xs sm:text-sm text-[#010101] uppercase tracking-wide">
+                ACTIVIDADES DEL SERVICIO
+              </h3>
+              <p className="text-[11px] text-neutral-500">
+                Checklist técnico oficial para la hoja de trabajo en taller.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              {SERVICE_ACTIVITIES_LIST.map((act) => {
+                const isChecked = serviceActivities[act.key];
+                return (
+                  <div
+                    key={act.key}
+                    onClick={() => toggleActivity(act.key)}
+                    className={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition ${
+                      isChecked
+                        ? 'bg-[#010101] border-[#010101] text-white'
+                        : 'bg-white border-neutral-200 text-[#010101] hover:border-neutral-300'
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-xs border flex items-center justify-center shrink-0 mt-0.5 ${
+                        isChecked ? 'bg-[#DD040F] border-[#DD040F]' : 'border-neutral-400 bg-white'
+                      }`}
+                    >
+                      {isChecked && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                    </div>
+                    <span className="font-semibold text-xs leading-snug">{act.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* SECCIÓN 3: DIAGRAMAS (VISTA DE MOTO + MEDIDOR DE GASOLINA) */}
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-300 shadow-2xs space-y-4">
+          <div className="border-b pb-3 border-neutral-200 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <label className="block text-xs font-bold text-[#010101] mb-1">
-                Nivel de Gasolina en Tanque: <strong className="text-[#DD040F]">{fuelLevel}%</strong>
-              </label>
-              <div className="grid grid-cols-5 gap-1.5 pt-1">
+              <h3 className="font-black text-sm text-[#010101] uppercase tracking-wide">
+                3. Diagramas de Inspección & Nivel de Gasolina
+              </h3>
+              <p className="text-xs text-neutral-500">
+                Haz clic sobre la motocicleta para marcar rayones o daños previos. Ajusta el dial de gasolina.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Nombre del detalle (ej: Raspón)"
+                value={newPointLabel}
+                onChange={(e) => setNewPointLabel(e.target.value)}
+                className="p-1.5 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            {/* Interactive Motorcycle Silhouette Diagram */}
+            <div className="md:col-span-8 flex flex-col items-center">
+              <span className="text-xs font-bold text-neutral-700 mb-2">
+                Haz clic en el diagrama de la moto para colocar un punto de daño:
+              </span>
+
+              <div
+                onClick={handleDiagramClick}
+                className="relative w-full max-w-md h-48 bg-[#F8F9FA] border-2 border-dashed border-neutral-300 rounded-2xl p-4 flex items-center justify-center cursor-crosshair hover:border-[#DD040F] transition"
+              >
+                <svg viewBox="0 0 200 90" className="w-full h-full text-neutral-800">
+                  <ellipse cx="25" cy="45" rx="14" ry="7" fill="#010101" />
+                  <ellipse cx="175" cy="45" rx="16" ry="9" fill="#010101" />
+                  <path d="M 25 45 L 60 45" stroke="#010101" strokeWidth="6" />
+                  <path d="M 55 15 L 60 45 L 55 75" stroke="#010101" strokeWidth="4" strokeLinecap="round" />
+                  <circle cx="50" cy="12" r="3" fill="#DD040F" />
+                  <circle cx="50" cy="78" r="3" fill="#DD040F" />
+                  <path d="M 65 30 Q 95 24 110 32 L 110 58 Q 95 66 65 60 Z" fill="#262626" />
+                  <path d="M 110 33 Q 135 32 155 36 L 155 54 Q 135 58 110 57 Z" fill="#010101" />
+                  <path d="M 155 38 L 180 43 L 180 47 L 155 52 Z" fill="#525252" />
+                  <path d="M 100 62 L 165 64" stroke="#737373" strokeWidth="5" strokeLinecap="round" />
+                </svg>
+
+                {/* Markers */}
+                {diagramPoints.map((pt) => (
+                  <div
+                    key={pt.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeDiagramPoint(pt.id);
+                    }}
+                    style={{ left: `${pt.x}%`, top: `${pt.y}%` }}
+                    className="absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full bg-[#DD040F] text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-md cursor-pointer animate-bounce"
+                    title={`Clic para borrar: ${pt.label}`}
+                  >
+                    !
+                  </div>
+                ))}
+              </div>
+
+              {diagramPoints.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {diagramPoints.map((pt, i) => (
+                    <span
+                      key={pt.id}
+                      onClick={() => removeDiagramPoint(pt.id)}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#DD040F]/10 border border-[#DD040F]/30 text-xs font-bold text-[#DD040F] cursor-pointer"
+                    >
+                      Punto {i + 1}: {pt.label} ✕
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Interactive Fuel Level Dial */}
+            <div className="md:col-span-4 flex flex-col items-center bg-[#F8F9FA] p-4 rounded-2xl border border-neutral-300">
+              <span className="text-xs font-black uppercase tracking-wider text-[#010101] mb-2">
+                Nivel de Gasolina en Tanque
+              </span>
+
+              {/* Dial visual */}
+              <div className="relative w-36 h-20 flex items-center justify-center">
+                <svg viewBox="0 0 100 60" className="w-full h-full">
+                  <path
+                    d="M 15 50 A 40 40 0 0 1 85 50"
+                    fill="none"
+                    stroke="#e5e5e5"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M 15 50 A 40 40 0 0 1 85 50"
+                    fill="none"
+                    stroke="#010101"
+                    strokeWidth="5"
+                    strokeDasharray="110"
+                    strokeDashoffset={110 - (110 * fuelLevel) / 100}
+                  />
+                  <line x1="15" y1="50" x2="22" y2="47" stroke="#010101" strokeWidth="2" />
+                  <line x1="50" y1="10" x2="50" y2="18" stroke="#010101" strokeWidth="2" />
+                  <line x1="85" y1="50" x2="78" y2="47" stroke="#010101" strokeWidth="2" />
+                  <text x="10" y="58" fontSize="10" fontWeight="bold" fill="#DD040F">E</text>
+                  <text x="83" y="58" fontSize="10" fontWeight="bold" fill="#010101">F</text>
+                  {/* Needle */}
+                  <g transform={`rotate(${-45 + (fuelLevel / 100) * 90} 50 50)`}>
+                    <line x1="50" y1="50" x2="50" y2="15" stroke="#DD040F" strokeWidth="2.5" strokeLinecap="round" />
+                    <circle cx="50" cy="50" r="4" fill="#010101" />
+                  </g>
+                </svg>
+              </div>
+
+              <div className="grid grid-cols-5 gap-1.5 w-full mt-3">
                 {([0, 25, 50, 75, 100] as FuelLevel[]).map((lvl) => (
                   <button
                     key={lvl}
                     type="button"
                     onClick={() => setFuelLevel(lvl)}
-                    className={`py-2 text-xs font-bold rounded-lg border transition ${
+                    className={`py-1.5 text-xs font-bold rounded-lg border transition ${
                       fuelLevel === lvl
                         ? 'bg-[#DD040F] text-white border-[#DD040F] shadow-xs'
-                        : 'bg-[#F8F9FA] text-[#010101] border-neutral-200 hover:bg-neutral-100'
+                        : 'bg-white text-[#010101] border-neutral-300 hover:bg-neutral-100'
                     }`}
                   >
                     {lvl}%
@@ -575,254 +832,237 @@ export const CheckInWizard: React.FC<CheckInWizardProps> = ({ onOrderCreated }) 
               </div>
             </div>
           </div>
-
-          {/* Daños Previos */}
-          <div className="p-4 rounded-xl bg-[#F8F9FA] border border-neutral-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-xs uppercase tracking-wide text-[#010101] flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-[#DD040F]" />
-                Registro de Daños Previos (Rayones, Golpes, Fugas)
-              </span>
-              <span className="text-[11px] text-neutral-400">Protección legal del taller</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              <div>
-                <select
-                  value={newDamageZone}
-                  onChange={(e) => setNewDamageZone(e.target.value as DamageReport['zone'])}
-                  className="w-full p-2 bg-white border border-neutral-200 rounded-lg text-xs text-[#010101]"
-                >
-                  {DAMAGE_ZONES.map((z) => (
-                    <option key={z.id} value={z.id}>{z.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <select
-                  value={newDamageType}
-                  onChange={(e) => setNewDamageType(e.target.value as DamageReport['type'])}
-                  className="w-full p-2 bg-white border border-neutral-200 rounded-lg text-xs text-[#010101]"
-                >
-                  <option value="rayón">Rayón / Raspón</option>
-                  <option value="abolladura">Abolladura / Golpe</option>
-                  <option value="plástico_roto">Plástico Roto / Fisurado</option>
-                  <option value="espejo_roto">Espejo / Maneta Dañada</option>
-                  <option value="fuga">Fuga de Líquido</option>
-                  <option value="otro">Otro Detalle</option>
-                </select>
-              </div>
-              <div>
-                <input
-                  type="text"
-                  placeholder="Detalle específico (ej. Raspón de 5cm)"
-                  value={newDamageNotes}
-                  onChange={(e) => setNewDamageNotes(e.target.value)}
-                  className="w-full p-2 bg-white border border-neutral-200 rounded-lg text-xs text-[#010101]"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleAddDamage}
-                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-[#010101] hover:bg-[#1a1a1a] text-white text-xs font-semibold transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Agregar Daño</span>
-              </button>
-            </div>
-
-            {/* Damage List */}
-            {damages.length > 0 && (
-              <div className="space-y-1.5 pt-2">
-                {damages.map((dmg, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-2 rounded-lg bg-white border border-neutral-200 text-xs"
-                  >
-                    <div>
-                      <span className="font-bold text-[#010101] capitalize">{dmg.zone.replace('_', ' ')}</span>
-                      <span className="mx-1.5 text-neutral-300">•</span>
-                      <span className="text-[#DD040F] font-semibold uppercase text-[10px]">{dmg.type}</span>
-                      <span className="mx-1.5 text-neutral-300">•</span>
-                      <span className="text-neutral-600">{dmg.notes}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDamage(idx)}
-                      className="text-neutral-400 hover:text-[#DD040F]"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Accesorios Dejados en Custodia */}
-          <div>
-            <label className="block text-xs font-bold text-[#010101] mb-2">
-              Accesorios Dejados por el Cliente
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {ACCESSORY_OPTIONS.map((acc) => {
-                const isSelected = accessoriesLeft.includes(acc);
-                return (
-                  <button
-                    key={acc}
-                    type="button"
-                    onClick={() => toggleAccessory(acc)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
-                      isSelected
-                        ? 'bg-[#010101] text-white border-[#010101] shadow-2xs'
-                        : 'bg-[#F8F9FA] text-neutral-600 border-neutral-200 hover:bg-neutral-100'
-                    }`}
-                  >
-                    {isSelected ? '✓ ' : '+ '}
-                    {acc}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Fotografías del Estado Inicial */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-[#010101] flex items-center gap-1.5">
-                <Camera className="w-3.5 h-3.5 text-neutral-500" />
-                Fotografías de Entrada (Respaldo visual)
-              </label>
-              <label className="text-xs font-bold text-[#DD040F] hover:underline cursor-pointer">
-                + Subir Foto
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAddPhoto}
-                  className="hidden"
-                />
-              </label>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {photos.map((pUrl, idx) => (
-                <div key={idx} className="relative rounded-xl overflow-hidden aspect-video bg-neutral-100 border border-neutral-200 group">
-                  <img src={pUrl} alt="Foto moto" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setPhotos((prev) => prev.filter((_, i) => i !== idx))}
-                    className="absolute top-1.5 right-1.5 p-1 rounded-full bg-[#010101]/80 text-white opacity-0 group-hover:opacity-100 transition"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* Step 4: Motivo de Ingreso & Asignación */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
-          <div className="border-b pb-3 border-neutral-100">
-            <h3 className="font-bold text-sm text-[#010101]">4. Motivo de Ingreso & Asignación</h3>
+        {/* SECCIÓN 4: OBSERVACIONES & ASIGNACIÓN */}
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-300 shadow-2xs space-y-4">
+          <div className="border-b pb-3 border-neutral-200">
+            <h3 className="font-black text-sm text-[#010101] uppercase tracking-wide">
+              4. Observaciones & Motivo de Ingreso
+            </h3>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#010101] mb-1">
-              Motivo de la Visita / Fallas Reportadas por el Cliente *
+            <label className="block text-xs font-bold text-neutral-700 mb-1">
+              Observaciones del Asesor / Falla Reportada por el Cliente *
             </label>
             <textarea
               required
-              rows={2}
-              placeholder="Ej: Falla en encendido matutino + Servicio general de 15,000 km + Ruido en cadena"
-              value={reasonForVisit}
-              onChange={(e) => setReasonForVisit(e.target.value)}
-              className="w-full p-3 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+              rows={3}
+              placeholder="Detalla fallas reportadas, síntomas del motor, ruidos extraños o requerimientos especiales..."
+              value={observations}
+              onChange={(e) => setObservations(e.target.value)}
+              className="w-full p-3 bg-[#F8F9FA] border border-neutral-300 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-[#010101] mb-1">
-                Asignar a Mecánico (Opcional)
-              </label>
+              <label className="block text-xs font-bold text-neutral-700 mb-1">Mecánico Asignado</label>
               <select
                 value={assignedMechanicId}
                 onChange={(e) => setAssignedMechanicId(e.target.value)}
-                className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-300 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden font-bold"
               >
                 <option value="">-- Sin Asignar (Pendiente) --</option>
                 {staff
                   .filter((s) => s.role === 'mechanic')
                   .map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.fullName} ({m.specialty || 'Mecánico General'})
+                      {m.fullName} ({m.specialty || 'Técnico Especialista'})
                     </option>
                   ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#010101] mb-1">Prioridad</label>
+              <label className="block text-xs font-bold text-neutral-700 mb-1">Prioridad del Servicio</label>
               <select
                 value={priority}
-                onChange={(e) => setPriority(e.target.value as 'normal' | 'alta' | 'urgente')}
-                className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
+                onChange={(e) => setPriority(e.target.value as any)}
+                className="w-full p-2.5 bg-[#F8F9FA] border border-neutral-300 rounded-xl text-xs sm:text-sm text-[#010101] focus:border-[#DD040F] focus:outline-hidden"
               >
-                <option value="normal">Normal (Tiempo estándar)</option>
+                <option value="normal">Normal (Tiempo estándar de turno)</option>
                 <option value="alta">Alta (Mismo día)</option>
-                <option value="urgente">Urgente (Emergencia / Vehículo de trabajo)</option>
+                <option value="urgente">Urgente (Moto de trabajo / Entrega prioritaria)</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* Submit Bar */}
+        {/* SECCIÓN 5: TABLA DE CONCEPTOS (CLAVE | No. | CONCEPTO | IMPORTE) */}
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-300 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b pb-3 border-neutral-200">
+            <div>
+              <h3 className="font-black text-sm text-[#010101] uppercase tracking-wide">
+                5. Conceptos & Presupuesto Inicial (Hoja de Trabajo)
+              </h3>
+              <p className="text-xs text-neutral-500">Mano de obra, aceites y refacciones presupuestadas</p>
+            </div>
+          </div>
+
+          {/* Quick add concept form */}
+          <div className="p-3 bg-[#F8F9FA] rounded-xl border border-neutral-300 grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-bold text-neutral-600 mb-1">CLAVE</label>
+              <input
+                type="text"
+                value={newConceptClave}
+                onChange={(e) => setNewConceptClave(e.target.value)}
+                placeholder="SRV-01"
+                className="w-full p-2 bg-white border border-neutral-300 rounded-lg text-xs font-mono text-[#010101]"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-bold text-neutral-600 mb-1">CANT (No.)</label>
+              <input
+                type="number"
+                min={1}
+                value={newConceptQty}
+                onChange={(e) => setNewConceptQty(Number(e.target.value))}
+                className="w-full p-2 bg-white border border-neutral-300 rounded-lg text-xs font-mono text-[#010101]"
+              />
+            </div>
+            <div className="sm:col-span-5">
+              <label className="block text-[11px] font-bold text-neutral-600 mb-1">CONCEPTO</label>
+              <input
+                type="text"
+                value={newConceptDesc}
+                onChange={(e) => setNewConceptDesc(e.target.value)}
+                placeholder="Ej: Cambio de pastillas delanteras"
+                className="w-full p-2 bg-white border border-neutral-300 rounded-lg text-xs text-[#010101]"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-bold text-neutral-600 mb-1">IMPORTE ($)</label>
+              <input
+                type="number"
+                min={0}
+                value={newConceptPrice}
+                onChange={(e) => setNewConceptPrice(Number(e.target.value))}
+                className="w-full p-2 bg-white border border-neutral-300 rounded-lg text-xs font-mono font-bold text-[#010101]"
+              />
+            </div>
+            <div className="sm:col-span-1">
+              <button
+                type="button"
+                onClick={handleAddConcept}
+                className="w-full py-2 bg-[#010101] hover:bg-neutral-800 text-white rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Concepts table */}
+          <div className="border border-neutral-300 rounded-xl overflow-hidden bg-white">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#010101] text-white font-bold text-[11px] uppercase tracking-wider">
+                <tr>
+                  <th className="p-2.5 text-center w-20">CLAVE</th>
+                  <th className="p-2.5 text-center w-16">No.</th>
+                  <th className="p-2.5">CONCEPTO</th>
+                  <th className="p-2.5 text-right w-28">IMPORTE</th>
+                  <th className="p-2.5 text-center w-12"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200">
+                {concepts.map((c) => (
+                  <tr key={c.id} className="hover:bg-neutral-50">
+                    <td className="p-2.5 text-center font-mono font-bold text-neutral-700">{c.clave}</td>
+                    <td className="p-2.5 text-center font-mono">{c.no}</td>
+                    <td className="p-2.5 font-bold text-[#010101]">{c.concepto}</td>
+                    <td className="p-2.5 text-right font-mono font-bold text-[#010101]">${c.importe.toLocaleString()}</td>
+                    <td className="p-2.5 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveConcept(c.id)}
+                        className="text-neutral-400 hover:text-[#DD040F] transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Totals Summary */}
+          <div className="flex justify-end p-4 bg-[#F8F9FA] rounded-xl border border-neutral-300 text-xs">
+            <div className="w-64 space-y-1.5">
+              <div className="flex justify-between text-neutral-600">
+                <span>SUBTOTAL:</span>
+                <span className="font-mono font-bold">${subtotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-neutral-600">
+                <span>I.V.A (16%):</span>
+                <span className="font-mono font-bold">${tax.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-[#010101] font-black text-sm pt-1.5 border-t-2 border-black">
+                <span>TOTAL:</span>
+                <span className="font-mono text-[#DD040F]">${total.toLocaleString()} MXN</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Submit Actions */}
         <div className="flex items-center justify-end gap-3 pt-2">
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#DD040F] hover:bg-[#b5030c] text-white font-extrabold text-sm shadow-lg shadow-[#DD040F]/30 transition cursor-pointer"
+            className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-[#DD040F] hover:bg-[#b5030c] text-white font-extrabold text-sm shadow-xl shadow-[#DD040F]/30 transition cursor-pointer"
           >
             <CheckCircle2 className="w-5 h-5" />
-            <span>Generar Orden de Servicio (OS)</span>
+            <span>Generar Hoja de Servicio & Registrar Unidad</span>
           </button>
         </div>
       </form>
 
-      {/* Success Modal */}
+      {/* Success Modal / Action Bar */}
       {createdOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#010101]/80 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-neutral-200 text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-[#010101] text-[#DD040F] flex items-center justify-center mx-auto border border-[#DD040F]/30">
-              <CheckCircle2 className="w-8 h-8" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#010101]/85 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-neutral-300 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-[#010101] text-[#DD040F] flex items-center justify-center mx-auto border-2 border-[#DD040F]">
+              <CheckCircle2 className="w-9 h-9" />
             </div>
+
             <div>
-              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-neutral-100 text-[#010101]">
-                {createdOrder.id}
+              <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-[#010101] text-white">
+                FOLIO: {createdOrder.orderNumber || createdOrder.id}
               </span>
-              <h3 className="text-lg font-black text-[#010101] mt-2">
-                ¡Orden de Servicio Generada con Éxito!
+              <h3 className="text-xl font-black text-[#010101] mt-2">
+                ¡Unidad Registrada en Taller!
               </h3>
               <p className="text-xs text-neutral-500 mt-1">
-                La moto {createdOrder.motorcycleInfo.brand} {createdOrder.motorcycleInfo.model} de {createdOrder.customerName} ha ingresado al taller.
+                {createdOrder.motorcycleInfo.brand} {createdOrder.motorcycleInfo.model} ingresó con éxito a QROMOTOS.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-2">
               <button
                 type="button"
+                onClick={() => setShowHojaPDFModal(true)}
+                className="flex items-center justify-center gap-2 py-3 px-3 rounded-xl bg-[#DD040F] hover:bg-[#b5030c] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Hoja Oficial PDF</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowTicketModal(true)}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#010101] text-xs font-bold transition"
+                className="flex items-center justify-center gap-2 py-3 px-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#010101] text-xs font-bold transition cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>Imprimir Ticket</span>
+                <span>Ticket Térmico</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowWhatsAppModal(true)}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#010101] hover:bg-[#1a1a1a] text-white text-xs font-bold transition border border-neutral-700"
+                className="col-span-2 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#010101] hover:bg-neutral-800 text-white text-xs font-bold transition border border-neutral-700 cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4 text-[#DD040F]" />
-                <span>Enviar WhatsApp</span>
+                <span>Enviar Notificación WhatsApp al Cliente</span>
               </button>
             </div>
 
@@ -830,21 +1070,31 @@ export const CheckInWizard: React.FC<CheckInWizardProps> = ({ onOrderCreated }) 
               type="button"
               onClick={() => {
                 setCreatedOrder(null);
-                setReasonForVisit('');
-                setDamages([]);
+                setObservations('');
+                setDiagramPoints([]);
               }}
-              className="w-full py-2.5 rounded-xl bg-[#DD040F] text-white text-xs font-bold hover:bg-[#b5030c] transition cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-neutral-100 text-neutral-700 text-xs font-bold hover:bg-neutral-200 transition cursor-pointer"
             >
-              Completar y Regresar al Tablero
+              Completar y Regresar
             </button>
           </div>
         </div>
       )}
 
+      {/* Official Form PDF Modal */}
+      {showHojaPDFModal && createdOrder && (
+        <HojaDeServicioPDFModal
+          order={createdOrder}
+          onClose={() => setShowHojaPDFModal(false)}
+        />
+      )}
+
+      {/* Ticket Modal */}
       {showTicketModal && createdOrder && (
         <TicketModal order={createdOrder} onClose={() => setShowTicketModal(false)} />
       )}
 
+      {/* WhatsApp Modal */}
       {showWhatsAppModal && createdOrder && (
         <WhatsAppModal
           order={createdOrder}

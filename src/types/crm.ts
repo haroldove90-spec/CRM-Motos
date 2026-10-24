@@ -23,6 +23,43 @@ export interface DamageReport {
   notes: string;
 }
 
+export interface MotoInventoryItemState {
+  espejos: 'si' | 'no' | 'roto_danado';
+  asiento: 'si' | 'no' | 'roto_danado';
+  faroDelantero: 'si' | 'no' | 'roto_danado';
+  luzFaroTrasero: 'si' | 'no' | 'roto_danado';
+  direccionales: 'si' | 'no' | 'roto_danado';
+  cubiertasCompletas: 'si' | 'no' | 'roto_danado';
+  taponGasolina: 'si' | 'no' | 'roto_danado';
+  tacometros: 'si' | 'no' | 'roto_danado';
+  pedales: 'si' | 'no' | 'roto_danado';
+  parabrisas: 'si' | 'no' | 'roto_danado';
+  claxon: 'si' | 'no' | 'roto_danado';
+}
+
+export interface ServiceActivitiesState {
+  ajusteFrenos: boolean;
+  ajusteLubricacionCadena: boolean;
+  revisionNiveles: boolean;
+  carburacion: boolean;
+  cambioAceiteMotor: boolean;
+  cambioBujia: boolean;
+  lubricacionAjusteChicotes: boolean;
+  revisionPunterias: boolean;
+  revisionLimpiezaSedazoAceite: boolean;
+  revisionLimpiezaFiltroAire: boolean;
+  ajusteTornilleria: boolean;
+  verificacionElectrica: boolean;
+}
+
+export interface DiagramPoint {
+  id: string;
+  x: number; // percentage 0 - 100
+  y: number; // percentage 0 - 100
+  label: string;
+  notes?: string;
+}
+
 export interface CheckInVisual {
   fuelLevel: FuelLevel;
   mileage: number;
@@ -31,10 +68,18 @@ export interface CheckInVisual {
   photos: string[]; // URLs or base64 images
   customerSignature?: string;
   notes: string;
+  // Official QROMOTOS Hoja de Servicio fields:
+  motoInventory?: MotoInventoryItemState;
+  serviceActivities?: ServiceActivitiesState;
+  diagramPoints?: DiagramPoint[];
+  entryDate?: string;
+  observations?: string;
 }
 
 export interface ServiceItem {
   id: string;
+  clave?: string;
+  rowNumber?: number;
   description: string;
   type: 'mano_de_obra' | 'repuesto';
   partNumber?: string;

@@ -13,9 +13,15 @@ import {
   CheckCircle,
   Eye,
   Wrench,
+  FileText,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 import { TicketModal } from './TicketModal';
 import { WhatsAppModal } from './WhatsAppModal';
+import { HojaDeServicioPDFModal } from './HojaDeServicioPDFModal';
+import { EditOrderModal } from './EditOrderModal';
+import { OrderDetailModal } from './OrderDetailModal';
 
 interface KanbanProps {
   onSelectOrder?: (order: ServiceOrder) => void;
@@ -47,9 +53,12 @@ const ORDER_FLOW: OrderStatus[] = [
 ];
 
 export const KanbanBoard: React.FC<KanbanProps> = ({ onSelectOrder, mechanicFilterId }) => {
-  const { orders, updateOrderStatus } = useCRM();
+  const { orders, updateOrderStatus, deleteServiceOrder } = useCRM();
   const [selectedTicketOrder, setSelectedTicketOrder] = useState<ServiceOrder | null>(null);
   const [selectedWhatsAppOrder, setSelectedWhatsAppOrder] = useState<ServiceOrder | null>(null);
+  const [selectedPdfOrder, setSelectedPdfOrder] = useState<ServiceOrder | null>(null);
+  const [selectedEditOrder, setSelectedEditOrder] = useState<ServiceOrder | null>(null);
+  const [viewingOrderId, setViewingOrderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredOrders = orders.filter((o) => {
@@ -205,16 +214,45 @@ export const KanbanBoard: React.FC<KanbanProps> = ({ onSelectOrder, mechanicFilt
 
                         {/* Quick Action Buttons Row */}
                         <div className="flex items-center justify-between pt-1 border-t border-[#AAA8A9]/20 gap-1">
-                          <div className="flex items-center gap-1">
-                            {onSelectOrder && (
-                              <button
-                                onClick={() => onSelectOrder(order)}
-                                title="Ver detalles y gestionar orden"
-                                className="p-1.5 rounded-lg bg-[#F1F2F3] hover:bg-[#010101] hover:text-white text-[#010101] transition cursor-pointer"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                          <div className="flex items-center flex-wrap gap-1">
+                            <button
+                              onClick={() => {
+                                if (onSelectOrder) {
+                                  onSelectOrder(order);
+                                } else {
+                                  setViewingOrderId(order.id);
+                                }
+                              }}
+                              title="Ver detalles completos de la orden"
+                              className="p-1.5 rounded-lg bg-[#F1F2F3] hover:bg-[#010101] hover:text-white text-[#010101] transition cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setSelectedPdfOrder(order)}
+                              title="Exportar Hoja Oficial de Servicio en PDF"
+                              className="p-1.5 rounded-lg bg-[#DD040F]/10 hover:bg-[#DD040F] hover:text-white text-[#DD040F] transition cursor-pointer"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setSelectedEditOrder(order)}
+                              title="Editar orden, vehículo y datos"
+                              className="p-1.5 rounded-lg bg-[#F1F2F3] hover:bg-[#010101] hover:text-white text-[#010101] transition cursor-pointer"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`¿Confirmas eliminar la orden ${order.id} de ${order.customerName}? Esta acción no se puede deshacer.`)) {
+                                  deleteServiceOrder(order.id);
+                                }
+                              }}
+                              title="Eliminar orden"
+                              className="p-1.5 rounded-lg bg-[#F1F2F3] hover:bg-[#DD040F] hover:text-white text-neutral-400 transition cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                             <button
                               onClick={() => setSelectedTicketOrder(order)}
                               title="Imprimir ticket / comprobante"
@@ -232,7 +270,7 @@ export const KanbanBoard: React.FC<KanbanProps> = ({ onSelectOrder, mechanicFilt
                           </div>
 
                           {/* Move Forward / Backward */}
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             {colIndex > 0 && (
                               <button
                                 onClick={() => handleMoveOrder(order.id, order.status, 'backward')}
@@ -276,6 +314,21 @@ export const KanbanBoard: React.FC<KanbanProps> = ({ onSelectOrder, mechanicFilt
           onClose={() => setSelectedWhatsAppOrder(null)}
           defaultType={selectedWhatsAppOrder.status === 'listo_entrega' ? 'ready' : selectedWhatsAppOrder.status === 'esperando_aprobacion' ? 'quote' : 'checkin'}
         />
+      )}
+
+      {/* PDF Hoja de Servicio Modal */}
+      {selectedPdfOrder && (
+        <HojaDeServicioPDFModal order={selectedPdfOrder} onClose={() => setSelectedPdfOrder(null)} />
+      )}
+
+      {/* Edit Order Modal */}
+      {selectedEditOrder && (
+        <EditOrderModal order={selectedEditOrder} onClose={() => setSelectedEditOrder(null)} />
+      )}
+
+      {/* Order Detail Modal */}
+      {viewingOrderId && (
+        <OrderDetailModal orderId={viewingOrderId} onClose={() => setViewingOrderId(null)} />
       )}
     </div>
   );

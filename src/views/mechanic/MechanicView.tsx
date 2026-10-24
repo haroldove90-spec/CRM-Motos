@@ -8,9 +8,14 @@ import {
   Pause,
   Eye,
   Send,
+  FileText,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 import { OrderDetailModal } from '../../components/OrderDetailModal';
 import { KanbanBoard } from '../../components/KanbanBoard';
+import { HojaDeServicioPDFModal } from '../../components/HojaDeServicioPDFModal';
+import { EditOrderModal } from '../../components/EditOrderModal';
 
 interface MechanicViewProps {
   activeModule?: string;
@@ -21,10 +26,12 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
   activeModule = 'my_jobs',
   onSelectModule,
 }) => {
-  const { orders, staff, inventory, toggleOrderTimer, addItemToOrder } = useCRM();
+  const { orders, staff, inventory, toggleOrderTimer, addItemToOrder, deleteServiceOrder } = useCRM();
   const mechanics = staff.filter((s) => s.role === 'mechanic');
   const [selectedMechanicId, setSelectedMechanicId] = useState<string>(mechanics[0]?.id || '');
   const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
+  const [pdfOrder, setPdfOrder] = useState<ServiceOrder | null>(null);
+  const [editOrder, setEditOrder] = useState<ServiceOrder | null>(null);
   const [subTab, setSubTab] = useState<string>(activeModule);
 
   useEffect(() => {
@@ -261,14 +268,49 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
                       </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedOrder(order)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#010101] text-xs font-bold transition"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-[#DD040F]" />
-                      <span>Diagnóstico</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setPdfOrder(order)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 bg-[#DD040F] hover:bg-[#b5030c] text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                        title="Ver / Exportar Hoja de Servicio Oficial en PDF"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>PDF</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrder(order)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#010101] text-xs font-bold transition cursor-pointer"
+                        title="Ver diagnóstico y detalles"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-[#DD040F]" />
+                        <span>Ver</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setEditOrder(order)}
+                        className="p-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#010101] text-xs transition cursor-pointer"
+                        title="Editar orden"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`¿Confirmas eliminar la orden ${order.id} de ${order.customerName}?`)) {
+                            deleteServiceOrder(order.id);
+                          }
+                        }}
+                        className="p-1.5 rounded-xl bg-neutral-100 hover:bg-[#DD040F]/15 text-neutral-400 hover:text-[#DD040F] text-xs transition cursor-pointer"
+                        title="Eliminar orden"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -413,6 +455,16 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
           orderId={selectedOrder.id}
           onClose={() => setSelectedOrder(null)}
         />
+      )}
+
+      {/* PDF Hoja de Servicio Modal */}
+      {pdfOrder && (
+        <HojaDeServicioPDFModal order={pdfOrder} onClose={() => setPdfOrder(null)} />
+      )}
+
+      {/* Edit Order Modal */}
+      {editOrder && (
+        <EditOrderModal order={editOrder} onClose={() => setEditOrder(null)} />
       )}
     </div>
   );

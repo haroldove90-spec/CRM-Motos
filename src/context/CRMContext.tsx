@@ -38,12 +38,15 @@ interface CRMContextType {
   // Customers & Motorcycles
   addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'motorcycleIds'>, motorcycle?: Omit<Motorcycle, 'id' | 'customerId'>) => { customer: Customer; motorcycle?: Motorcycle };
   updateCustomer: (id: string, updates: Partial<Customer>) => void;
+  deleteCustomer: (id: string) => void;
   addMotorcycle: (customerId: string, motorcycle: Omit<Motorcycle, 'id' | 'customerId'>) => Motorcycle;
   updateMotorcycle: (id: string, updates: Partial<Motorcycle>) => void;
+  deleteMotorcycle: (id: string) => void;
 
   // Orders
   createServiceOrder: (orderData: Partial<ServiceOrder>) => ServiceOrder;
   updateServiceOrder: (orderId: string, updates: Partial<ServiceOrder>) => void;
+  deleteServiceOrder: (orderId: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   addItemToOrder: (orderId: string, item: Omit<ServiceItem, 'id'>) => void;
   removeOrderItem: (orderId: string, itemId: string) => void;
@@ -254,6 +257,11 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCustomers((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
   };
 
+  const deleteCustomer = (id: string) => {
+    setCustomers((prev) => prev.filter((c) => c.id !== id));
+    setMotorcycles((prev) => prev.filter((m) => m.customerId !== id));
+  };
+
   const addMotorcycle = (customerId: string, motoData: Omit<Motorcycle, 'id' | 'customerId'>) => {
     const newMoto: Motorcycle = {
       id: `moto-${Date.now()}`,
@@ -269,6 +277,16 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateMotorcycle = (id: string, updates: Partial<Motorcycle>) => {
     setMotorcycles((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)));
+  };
+
+  const deleteMotorcycle = (id: string) => {
+    setMotorcycles((prev) => prev.filter((m) => m.id !== id));
+    setCustomers((prev) =>
+      prev.map((c) => ({
+        ...c,
+        motorcycleIds: c.motorcycleIds.filter((mid) => mid !== id),
+      }))
+    );
   };
 
   // Orders
@@ -337,6 +355,10 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, ...updates, updatedAt: new Date().toISOString() } : o))
     );
+  };
+
+  const deleteServiceOrder = (orderId: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
   };
 
   const updateOrderStatus = (orderId: string, status: OrderStatus) => {
@@ -715,10 +737,13 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         restoreSampleData,
         addCustomer,
         updateCustomer,
+        deleteCustomer,
         addMotorcycle,
         updateMotorcycle,
+        deleteMotorcycle,
         createServiceOrder,
         updateServiceOrder,
+        deleteServiceOrder,
         updateOrderStatus,
         addItemToOrder,
         removeOrderItem,

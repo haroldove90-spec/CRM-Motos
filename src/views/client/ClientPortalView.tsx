@@ -8,7 +8,9 @@ import {
   Star,
   ShieldCheck,
   BookOpen,
+  FileText,
 } from 'lucide-react';
+import { HojaDeServicioPDFModal } from '../../components/HojaDeServicioPDFModal';
 
 interface ClientPortalViewProps {
   activeModule?: string;
@@ -37,6 +39,7 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
   const [ratingStars, setRatingStars] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [pdfOrder, setPdfOrder] = useState<ServiceOrder | null>(null);
 
   const matchedOrder = orders.find((o) => {
     if (!searchTerm.trim()) return false;
@@ -188,11 +191,22 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
               </div>
             </div>
 
-            <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-neutral-400 block">Estado Actual</span>
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-black bg-[#010101] text-white border border-neutral-800 uppercase mt-0.5">
-                {matchedOrder.status.replace('_', ' ')}
-              </span>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+              <div className="text-right sm:text-left">
+                <span className="text-[10px] uppercase font-bold text-neutral-400 block">Estado Actual</span>
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-black bg-[#010101] text-white border border-neutral-800 uppercase mt-0.5">
+                  {matchedOrder.status.replace('_', ' ')}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPdfOrder(matchedOrder)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#DD040F] hover:bg-[#b5030c] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                title="Descargar Hoja Oficial de Servicio en PDF"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Hoja Oficial PDF</span>
+              </button>
             </div>
           </div>
 
@@ -341,7 +355,18 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
                   <p className="font-semibold text-[#010101]">"{ord.reasonForVisit}"</p>
                   <div className="flex items-center justify-between text-neutral-500 text-[11px] pt-1 border-t border-neutral-200">
                     <span>KM: {ord.checkIn.mileage.toLocaleString()} km</span>
-                    <span className="font-mono font-bold text-[#010101]">${ord.total.toLocaleString()} MXN</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPdfOrder(ord)}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-neutral-200 hover:bg-[#DD040F] hover:text-white text-[#010101] font-bold text-[10px] transition cursor-pointer"
+                        title="Ver Hoja de Servicio Oficial"
+                      >
+                        <FileText className="w-3 h-3" />
+                        <span>Hoja PDF</span>
+                      </button>
+                      <span className="font-mono font-bold text-[#010101]">${ord.total.toLocaleString()} MXN</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -466,6 +491,10 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
           <p className="font-bold text-[#010101] text-sm">No se encontró una orden activa con esa búsqueda</p>
           <p className="text-xs text-neutral-400 mt-1">Verifica tu número de placa o comunícate con recepción.</p>
         </div>
+      )}
+
+      {pdfOrder && (
+        <HojaDeServicioPDFModal order={pdfOrder} onClose={() => setPdfOrder(null)} />
       )}
     </div>
   );

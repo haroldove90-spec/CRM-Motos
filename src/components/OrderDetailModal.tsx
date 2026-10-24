@@ -6,12 +6,14 @@ import {
   Clock,
   Printer,
   MessageCircle,
+  FileText,
   CheckCircle2,
   Plus,
   Trash2,
 } from 'lucide-react';
 import { TicketModal } from './TicketModal';
 import { WhatsAppModal } from './WhatsAppModal';
+import { HojaDeServicioPDFModal } from './HojaDeServicioPDFModal';
 
 interface OrderDetailModalProps {
   orderId: string;
@@ -63,6 +65,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
   // Sub-modals
   const [showTicket, setShowTicket] = useState(false);
   const [showWhatsApp, setShowWhatsApp] = useState(false);
+  const [showHojaPDF, setShowHojaPDF] = useState(false);
 
   // Real-time tick for live timer
   const [, setTick] = useState(0);
@@ -184,6 +187,14 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowHojaPDF(true)}
+              title="Exportar Hoja Oficial de Servicio en PDF"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#DD040F] hover:bg-[#b5030c] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Hoja PDF</span>
+            </button>
             <button
               onClick={() => setShowTicket(true)}
               title="Imprimir ticket"
@@ -842,6 +853,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
 
       {showTicket && <TicketModal order={order} onClose={() => setShowTicket(false)} />}
       {showWhatsApp && <WhatsAppModal order={order} onClose={() => setShowWhatsApp(false)} defaultType="ready" />}
+      {showHojaPDF && <HojaDeServicioPDFModal order={order} onClose={() => setShowHojaPDF(false)} />}
     </div>
   );
 };

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCRM } from '../../context/CRMContext';
-import { StaffUser } from '../../types/crm';
+import { StaffUser, ServiceOrder } from '../../types/crm';
 import {
   Wrench,
   DollarSign,
@@ -12,8 +12,19 @@ import {
   CheckCircle2,
   AlertCircle,
   Percent,
+  Eye,
+  Edit2,
+  FileText,
+  Download,
+  X,
+  Printer,
+  Calendar,
+  Search,
 } from 'lucide-react';
 import { KanbanBoard } from '../../components/KanbanBoard';
+import { HojaDeServicioPDFModal } from '../../components/HojaDeServicioPDFModal';
+import { OrderDetailModal } from '../../components/OrderDetailModal';
+import { EditOrderModal } from '../../components/EditOrderModal';
 
 interface AdminDashboardProps {
   activeModule?: string;
@@ -30,7 +41,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     staff,
     settings,
     addStaff,
+    updateStaff,
     deleteStaff,
+    deleteServiceOrder,
     updateSettings,
     testSupabaseConnection,
     clearSupabaseRecords,
@@ -74,6 +87,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [sbKey, setSbKey] = useState(settings.supabaseAnonKey || '');
   const [sbTestResult, setSbTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [sbLoading, setSbLoading] = useState(false);
+
+  // Modals and detail states
+  const [editingStaff, setEditingStaff] = useState<StaffUser | null>(null);
+  const [viewingStaff, setViewingStaff] = useState<StaffUser | null>(null);
+  const [pdfOrder, setPdfOrder] = useState<ServiceOrder | null>(null);
+  const [viewOrder, setViewOrder] = useState<ServiceOrder | null>(null);
+  const [editOrder, setEditOrder] = useState<ServiceOrder | null>(null);
+  const [orderSearch, setOrderSearch] = useState('');
+
+  // Staff edit form
+  const [editStaffName, setEditStaffName] = useState('');
+  const [editStaffRole, setEditStaffRole] = useState<StaffUser['role']>('mechanic');
+  const [editStaffPhone, setEditStaffPhone] = useState('');
+  const [editStaffEmail, setEditStaffEmail] = useState('');
+  const [editStaffCommission, setEditStaffCommission] = useState(15);
+  const [editStaffSpecialty, setEditStaffSpecialty] = useState('');
+
+  const openEditStaff = (m: StaffUser) => {
+    setEditingStaff(m);
+    setEditStaffName(m.fullName);
+    setEditStaffRole(m.role);
+    setEditStaffPhone(m.phone);
+    setEditStaffEmail(m.email || '');
+    setEditStaffCommission(m.commissionPercentage);
+    setEditStaffSpecialty(m.specialty || '');
+  };
+
+  const handleSaveEditStaff = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+    updateStaff(editingStaff.id, {
+      fullName: editStaffName,
+      role: editStaffRole,
+      phone: editStaffPhone,
+      email: editStaffEmail,
+      commissionPercentage: Number(editStaffCommission),
+      specialty: editStaffSpecialty,
+    });
+    setEditingStaff(null);
+  };
 
   // Commission Calculations for Staff
   const staffCommissions = staff.map((member) => {
@@ -471,12 +524,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </td>
                     <td className="p-3 text-center font-mono font-semibold">{m.completedOrders}</td>
                     <td className="p-3 text-center">
-                      <button
-                        onClick={() => deleteStaff(m.id)}
-                        className="text-neutral-400 hover:text-[#DD040F] transition"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => setViewingStaff(m)}
+                          className="p-1.5 bg-[#010101] text-white rounded-lg text-xs hover:bg-neutral-800 transition cursor-pointer"
+                          title="Ver perfil de integrante"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openEditStaff(m)}
+                          className="p-1.5 bg-neutral-100 hover:bg-neutral-200 text-[#010101] rounded-lg text-xs transition cursor-pointer"
+                          title="Editar integrante y comisiones"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`¿Confirmas eliminar a ${m.fullName}?`)) {
+                              deleteStaff(m.id);
+                            }
+                          }}
+                          className="p-1.5 bg-neutral-100 hover:bg-[#DD040F]/15 text-neutral-400 hover:text-[#DD040F] rounded-lg text-xs transition cursor-pointer"
+                          title="Eliminar de personal"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -525,6 +599,123 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   horas
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Historial General de Órdenes con Acciones y Exportación PDF */}
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="font-extrabold text-sm text-[#010101]">Registro & Auditoría de Órdenes de Servicio</h3>
+                <p className="text-xs text-neutral-500">Consulta, edición, eliminación y exportación en PDF de cada orden</p>
+              </div>
+              <div className="relative w-full sm:w-64">
+                <input
+                  type="text"
+                  placeholder="Buscar orden, cliente o placa..."
+                  value={orderSearch}
+                  onChange={(e) => setOrderSearch(e.target.value)}
+                  className="w-full px-3 py-1.5 pl-8 bg-[#F8F9FA] border border-neutral-300 rounded-xl text-xs text-[#010101] placeholder:text-neutral-400 focus:outline-hidden focus:border-[#DD040F]"
+                />
+                <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-2" />
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-neutral-200">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#010101] text-white font-bold uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="p-3 text-center">Folio</th>
+                    <th className="p-3">Fecha</th>
+                    <th className="p-3">Cliente</th>
+                    <th className="p-3">Motocicleta</th>
+                    <th className="p-3 text-right">Total</th>
+                    <th className="p-3 text-center">Estado</th>
+                    <th className="p-3 text-center w-40">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-200">
+                  {orders
+                    .filter((o) => {
+                      if (!orderSearch.trim()) return true;
+                      const q = orderSearch.toLowerCase();
+                      return (
+                        o.id.toLowerCase().includes(q) ||
+                        (o.orderNumber && o.orderNumber.toString().includes(q)) ||
+                        o.customerName.toLowerCase().includes(q) ||
+                        o.motorcycleInfo.plate.toLowerCase().includes(q) ||
+                        o.motorcycleInfo.model.toLowerCase().includes(q)
+                      );
+                    })
+                    .map((ord) => (
+                      <tr key={ord.id} className="hover:bg-neutral-50 transition">
+                        <td className="p-3 text-center font-mono font-black text-sm text-[#DD040F]">
+                          #{ord.orderNumber || ord.id.replace(/[^0-9]/g, '')}
+                        </td>
+                        <td className="p-3 font-mono text-[11px] text-neutral-500">
+                          {new Date(ord.createdAt).toLocaleDateString('es-MX')}
+                        </td>
+                        <td className="p-3">
+                          <strong className="text-[#010101] block">{ord.customerName}</strong>
+                          <span className="text-[10px] text-neutral-400 font-mono">{ord.customerPhone}</span>
+                        </td>
+                        <td className="p-3">
+                          <strong className="text-[#010101] block">
+                            {ord.motorcycleInfo.brand} {ord.motorcycleInfo.model}
+                          </strong>
+                          <span className="text-[10px] text-neutral-400 font-mono">
+                            Placa: {ord.motorcycleInfo.plate}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-mono font-bold text-[#010101]">
+                          ${ord.total.toLocaleString()}
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#010101] text-white uppercase">
+                            {ord.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => setPdfOrder(ord)}
+                              className="flex items-center gap-1 px-2 py-1 bg-[#DD040F] hover:bg-[#b5030c] text-white rounded-lg text-[11px] font-bold transition shadow-xs cursor-pointer"
+                              title="Exportar Hoja Oficial de Servicio en PDF"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>PDF</span>
+                            </button>
+                            <button
+                              onClick={() => setViewOrder(ord)}
+                              className="p-1.5 bg-[#010101] text-white rounded-lg text-xs hover:bg-neutral-800 transition cursor-pointer"
+                              title="Ver detalles de orden"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setEditOrder(ord)}
+                              className="p-1.5 bg-neutral-100 hover:bg-neutral-200 text-[#010101] rounded-lg text-xs transition cursor-pointer"
+                              title="Editar orden"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`¿Confirmas eliminar la orden ${ord.id} de ${ord.customerName}?`)) {
+                                  deleteServiceOrder(ord.id);
+                                }
+                              }}
+                              className="p-1.5 bg-neutral-100 hover:bg-[#DD040F]/15 text-neutral-400 hover:text-[#DD040F] rounded-lg text-xs transition cursor-pointer"
+                              title="Eliminar orden"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -690,6 +881,180 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Ver Integrante */}
+      {viewingStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#010101]/85 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-neutral-300 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-[#010101] text-white">
+              <h3 className="font-bold text-sm text-white">Perfil de Personal</h3>
+              <button
+                onClick={() => setViewingStaff(null)}
+                className="p-1 rounded-lg text-neutral-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="bg-[#F8F9FA] p-4 rounded-xl border border-neutral-200 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400 font-semibold">Nombre:</span>
+                  <strong className="text-[#010101] text-sm">{viewingStaff.fullName}</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400 font-semibold">Rol Asignado:</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#010101] text-white uppercase">
+                    {viewingStaff.role}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400 font-semibold">Teléfono WhatsApp:</span>
+                  <span className="font-mono text-[#010101]">{viewingStaff.phone}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400 font-semibold">Correo:</span>
+                  <span className="font-mono text-[#010101]">{viewingStaff.email || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400 font-semibold">Especialidad:</span>
+                  <span className="font-semibold text-[#010101]">{viewingStaff.specialty || 'General'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400 font-semibold">% Comisión M.O.:</span>
+                  <span className="font-mono font-black text-sm text-[#DD040F]">{viewingStaff.commissionPercentage}%</span>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    const st = viewingStaff;
+                    setViewingStaff(null);
+                    openEditStaff(st);
+                  }}
+                  className="px-4 py-2 bg-[#010101] hover:bg-neutral-800 text-white font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>Editar Integrante</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Integrante */}
+      {editingStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#010101]/85 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-neutral-300 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-[#010101] text-white">
+              <h3 className="font-bold text-sm text-white">Editar Integrante de Personal</h3>
+              <button
+                onClick={() => setEditingStaff(null)}
+                className="p-1 rounded-lg text-neutral-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEditStaff} className="p-5 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Nombre Completo *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editStaffName}
+                    onChange={(e) => setEditStaffName(e.target.value)}
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs text-[#010101]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Rol</label>
+                  <select
+                    value={editStaffRole}
+                    onChange={(e) => setEditStaffRole(e.target.value as any)}
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs font-bold text-[#010101]"
+                  >
+                    <option value="mechanic">Mecánico / Técnico</option>
+                    <option value="reception">Recepción / Asesor</option>
+                    <option value="warehouse">Almacén / Refacciones</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">% Comisión</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={editStaffCommission}
+                    onChange={(e) => setEditStaffCommission(Number(e.target.value))}
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs font-mono font-bold text-[#010101]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Teléfono WhatsApp *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={editStaffPhone}
+                    onChange={(e) => setEditStaffPhone(e.target.value)}
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs text-[#010101]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Correo Electrónico</label>
+                  <input
+                    type="email"
+                    value={editStaffEmail}
+                    onChange={(e) => setEditStaffEmail(e.target.value)}
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs text-[#010101]"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-semibold text-neutral-500 mb-1">Especialidad</label>
+                  <input
+                    type="text"
+                    value={editStaffSpecialty}
+                    onChange={(e) => setEditStaffSpecialty(e.target.value)}
+                    placeholder="Mantenimiento 4T, Frenos ABS..."
+                    className="w-full p-2 bg-[#F8F9FA] border border-neutral-300 rounded-lg text-xs text-[#010101]"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-neutral-200">
+                <button
+                  type="button"
+                  onClick={() => setEditingStaff(null)}
+                  className="px-4 py-2 bg-neutral-100 text-neutral-600 rounded-xl text-xs font-semibold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#DD040F] hover:bg-[#b5030c] text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-xs"
+                >
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Hoja de Servicio Modal */}
+      {pdfOrder && (
+        <HojaDeServicioPDFModal order={pdfOrder} onClose={() => setPdfOrder(null)} />
+      )}
+
+      {/* Order Detail Modal */}
+      {viewOrder && (
+        <OrderDetailModal orderId={viewOrder.id} onClose={() => setViewOrder(null)} />
+      )}
+
+      {/* Edit Order Modal */}
+      {editOrder && (
+        <EditOrderModal order={editOrder} onClose={() => setEditOrder(null)} />
       )}
     </div>
   );
