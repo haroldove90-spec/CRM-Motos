@@ -29,31 +29,31 @@ export const ProfecoContractFormModal: React.FC<ProfecoContractFormModalProps> =
 
   // Workshop / Provider
   const [providerName, setProviderName] = useState(
-    existingContract?.providerName || settings.legalName || settings.workshopName
+    existingContract?.providerName || settings.legalName || 'Luis Horacio Aguilar Pliego'
   );
   const [providerRepresentative, setProviderRepresentative] = useState(
-    existingContract?.providerRepresentative || settings.profecoRepresentative || 'Ing. Carlos Mendoza Silva'
+    existingContract?.providerRepresentative || settings.profecoRepresentative || 'Luis Horacio Aguilar Pliego'
   );
   const [providerRfc, setProviderRfc] = useState(
-    existingContract?.providerRfc || settings.taxId
+    existingContract?.providerRfc || settings.taxId || 'AUPL650426864'
   );
   const [providerAddress, setProviderAddress] = useState(
-    existingContract?.providerAddress || settings.address
+    existingContract?.providerAddress || settings.address || 'Av. Const. Ote. #17 Col. San Francisquito, C.P. 76058, Qro.'
   );
   const [providerPhone, setProviderPhone] = useState(
-    existingContract?.providerPhone || settings.phone
+    existingContract?.providerPhone || settings.phone || '(442) 224 9069'
   );
   const [providerEmail, setProviderEmail] = useState(
-    existingContract?.providerEmail || settings.email
+    existingContract?.providerEmail || settings.email || 'qromotos@gmail.com'
   );
   const [profecoRegistrationNumber, setProfecoRegistrationNumber] = useState(
-    existingContract?.profecoRegistrationNumber || settings.profecoRegistrationNumber || 'PFC-REP-4892/2026'
+    existingContract?.profecoRegistrationNumber || settings.profecoRegistrationNumber || '5126-2025'
   );
   const [profecoRegistrationDate, setProfecoRegistrationDate] = useState(
-    existingContract?.profecoRegistrationDate || settings.profecoRegistrationDate || '15/01/2026'
+    existingContract?.profecoRegistrationDate || settings.profecoRegistrationDate || '25 de septiembre de 2025'
   );
   const [scheduleAttention, setScheduleAttention] = useState(
-    existingContract?.scheduleAttention || settings.profecoScheduleAttention || 'Lunes a Viernes 08:30 a 19:00 hrs, Sábados 09:00 a 14:00 hrs'
+    existingContract?.scheduleAttention || settings.profecoScheduleAttention || 'L - V 10:00 am a 18:00 hrs y sábados de 10:00 am a 14:00 hrs'
   );
 
   // Customer

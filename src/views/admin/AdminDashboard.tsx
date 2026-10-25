@@ -89,10 +89,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [warranty, setWarranty] = useState(settings.warrantyPolicy);
 
   // PROFECO Settings Form State (Personalización de plantilla para Admin)
-  const [profecoRegNum, setProfecoRegNum] = useState(settings.profecoRegistrationNumber || 'PFC-REP-4892/2026');
-  const [profecoRegDate, setProfecoRegDate] = useState(settings.profecoRegistrationDate || '15/01/2026');
-  const [profecoRep, setProfecoRep] = useState(settings.profecoRepresentative || 'Ing. Carlos Mendoza Silva');
-  const [profecoSchedule, setProfecoSchedule] = useState(settings.profecoScheduleAttention || 'Lunes a Viernes 08:30 a 19:00 hrs, Sábados 09:00 a 14:00 hrs');
+  const [profecoRegNum, setProfecoRegNum] = useState(settings.profecoRegistrationNumber || '5126-2025');
+  const [profecoRegDate, setProfecoRegDate] = useState(settings.profecoRegistrationDate || '25 de septiembre de 2025');
+  const [profecoRep, setProfecoRep] = useState(settings.profecoRepresentative || 'Luis Horacio Aguilar Pliego');
+  const [profecoSchedule, setProfecoSchedule] = useState(settings.profecoScheduleAttention || 'L - V 10:00 am a 18:00 hrs y sábados de 10:00 am a 14:00 hrs');
   const [profecoWarrantyDays, setProfecoWarrantyDays] = useState(settings.profecoDefaultWarrantyDays || 90);
   const [profecoPenalty, setProfecoPenalty] = useState(settings.profecoDefaultPenaltyPercent || 15);
   const [profecoTestRadius, setProfecoTestRadius] = useState(settings.profecoDefaultTestRadiusKm || 5);
