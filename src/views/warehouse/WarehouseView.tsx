@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { KardexAndAuditTab } from './KardexAndAuditTab';
 
 interface WarehouseViewProps {
   activeModule?: string;
@@ -254,19 +255,19 @@ export const WarehouseView: React.FC<WarehouseViewProps> = ({
       <div className="flex border-b border-neutral-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
         <button
           onClick={() => handleTabChange('catalog')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'catalog' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'catalog' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           Catálogo & Stock ({inventory.length})
         </button>
         <button
           onClick={() => handleTabChange('requests')}
-          className={`py-3 px-3 border-b-2 transition relative ${
-            subTab === 'requests' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition relative ${
+            subTab === 'requests' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
-          Surtir a Mecánicos
+          Surtir a Taller
           {pendingRequests.length > 0 && (
             <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-[#DD040F] text-white text-[10px]">
               {pendingRequests.length}
@@ -274,25 +275,49 @@ export const WarehouseView: React.FC<WarehouseViewProps> = ({
           )}
         </button>
         <button
-          onClick={() => handleTabChange('low_stock')}
-          className={`py-3 px-3 border-b-2 transition relative ${
-            subTab === 'low_stock' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          onClick={() => handleTabChange('entries')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'entries' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
-          Alertas de Reabastecimiento
+          Compras & Entrada de Mercancía
+        </button>
+        <button
+          onClick={() => handleTabChange('kardex')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'kardex' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Kardex de Movimientos
+        </button>
+        <button
+          onClick={() => handleTabChange('division')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'division' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Taller vs Mostrador
+        </button>
+        <button
+          onClick={() => handleTabChange('audit')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'audit' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Conteo Físico vs Sistema
+        </button>
+        <button
+          onClick={() => handleTabChange('low_stock')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition relative ${
+            subTab === 'low_stock' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Alertas Bajo Stock
           {lowStockItems.length > 0 && (
             <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-[#010101] text-white text-[10px]">
               {lowStockItems.length}
             </span>
           )}
-        </button>
-        <button
-          onClick={() => handleTabChange('entries')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'entries' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
-          }`}
-        >
-          Entrada de Mercancía
         </button>
       </div>
 
@@ -1069,6 +1094,15 @@ export const WarehouseView: React.FC<WarehouseViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* SUBTAB: KARDEX DE MOVIMIENTOS */}
+      {subTab === 'kardex' && <KardexAndAuditTab mode="kardex" />}
+
+      {/* SUBTAB: DIVISIÓN DE NEGOCIO TALLER VS MOSTRADOR */}
+      {subTab === 'division' && <KardexAndAuditTab mode="division" />}
+
+      {/* SUBTAB: CONTEO FÍSICO VS SISTEMA */}
+      {subTab === 'audit' && <KardexAndAuditTab mode="audit" />}
     </div>
   );
 };

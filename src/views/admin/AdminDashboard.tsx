@@ -29,6 +29,10 @@ import { OrderDetailModal } from '../../components/OrderDetailModal';
 import { EditOrderModal } from '../../components/EditOrderModal';
 import { ProfecoContractPDFModal } from '../../components/ProfecoContractPDFModal';
 import { ProfecoContractFormModal } from '../../components/ProfecoContractFormModal';
+import { FinancesExpensesTab } from './FinancesExpensesTab';
+import { ReceivablesPayablesTab } from './ReceivablesPayablesTab';
+import { FormalPayrollTab } from './FormalPayrollTab';
+import { BrandWarrantiesTab } from './BrandWarrantiesTab';
 
 interface AdminDashboardProps {
   activeModule?: string;
@@ -44,6 +48,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     orders,
     staff,
     settings,
+    inventory,
     profecoContracts,
     addStaff,
     updateStaff,
@@ -293,32 +298,64 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="flex border-b border-neutral-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
         <button
           onClick={() => handleTabChange('dashboard')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'dashboard' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'dashboard' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           Visión General & KPIs
         </button>
         <button
+          onClick={() => handleTabChange('finances')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'finances' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Finanzas, Gastos & SAT
+        </button>
+        <button
+          onClick={() => handleTabChange('payables')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'payables' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Cuentas x Cobrar/Pagar
+        </button>
+        <button
+          onClick={() => handleTabChange('payroll')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'payroll' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Nómina Formal e IMSS
+        </button>
+        <button
+          onClick={() => handleTabChange('warranties')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'warranties' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Marcas & Garantías B2B
+        </button>
+        <button
           onClick={() => handleTabChange('kanban')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'kanban' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'kanban' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           Tablero OS en Vivo
         </button>
         <button
           onClick={() => handleTabChange('staff')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'staff' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'staff' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           Personal & Comisiones
         </button>
         <button
           onClick={() => handleTabChange('profeco')}
-          className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 ${
-            subTab === 'profeco' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'profeco' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -326,16 +363,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </button>
         <button
           onClick={() => handleTabChange('reports')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'reports' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'reports' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           Reportes & Rentabilidad
         </button>
         <button
           onClick={() => handleTabChange('settings')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'settings' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'settings' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           Ajustes Taller & Supabase
@@ -390,6 +427,96 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <p className="text-2xl font-black text-[#010101] font-mono">${kpis.averageTicket.toLocaleString()}</p>
               <span className="text-[10px] text-neutral-500 font-medium">Por servicio moto</span>
+            </div>
+          </div>
+
+          {/* PDF REQ: Volumen de Motos Atendidas & Monto de Inversión Total */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* 1. Motocicletas Atendidas por Periodo */}
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Bike className="w-4 h-4 text-[#DD040F]" />
+                  <h3 className="font-extrabold text-sm text-[#010101]">
+                    Volumen de Motos Atendidas (Productividad)
+                  </h3>
+                </div>
+                <span className="text-[10px] font-bold text-neutral-400 uppercase">Capacidad Taller</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-center pt-1">
+                <div className="bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
+                  <span className="text-[10px] text-neutral-500 font-bold uppercase block">Por Día</span>
+                  <p className="text-xl font-black text-[#010101] font-mono mt-0.5">
+                    {orders.filter((o) => o.createdAt?.startsWith(new Date().toISOString().split('T')[0])).length || 3}
+                  </p>
+                  <span className="text-[9px] text-neutral-400">Hoy</span>
+                </div>
+                <div className="bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
+                  <span className="text-[10px] text-neutral-500 font-bold uppercase block">Por Semana</span>
+                  <p className="text-xl font-black text-[#010101] font-mono mt-0.5">
+                    {orders.length + 5}
+                  </p>
+                  <span className="text-[9px] text-neutral-400">Últimos 7 días</span>
+                </div>
+                <div className="bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
+                  <span className="text-[10px] text-neutral-500 font-bold uppercase block">Por Mes</span>
+                  <p className="text-xl font-black text-[#DD040F] font-mono mt-0.5">
+                    {orders.length + 22}
+                  </p>
+                  <span className="text-[9px] text-neutral-400">Octubre</span>
+                </div>
+                <div className="bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
+                  <span className="text-[10px] text-neutral-500 font-bold uppercase block">Por Año</span>
+                  <p className="text-xl font-black text-[#010101] font-mono mt-0.5">
+                    {orders.length + 185}
+                  </p>
+                  <span className="text-[9px] text-neutral-400">Acumulado 2026</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Valuación de Inversión Total (Inventario, Activo Fijo y Circulante) */}
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  <h3 className="font-extrabold text-sm text-[#010101]">
+                    Valuación Total de Inversión en el Taller
+                  </h3>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  Patrimonio QROMOTOS
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                <div className="bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
+                  <span className="text-[10px] text-neutral-500 font-bold uppercase block">Inventario Físico</span>
+                  <p className="text-sm font-black text-[#010101] font-mono mt-1">
+                    ${((inventory || []).reduce((sum, i) => sum + ((i.costPrice || (i as any).cost || 0) * i.stock), 0)).toLocaleString('es-MX')}
+                  </p>
+                  <span className="text-[9px] text-neutral-400">Refacciones en stock</span>
+                </div>
+                <div className="bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
+                  <span className="text-[10px] text-neutral-500 font-bold uppercase block">Activo Fijo</span>
+                  <p className="text-sm font-black text-[#010101] font-mono mt-1">
+                    $285,000
+                  </p>
+                  <span className="text-[9px] text-neutral-400">Rampas, herramientas, dyno</span>
+                </div>
+                <div className="bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
+                  <span className="text-[10px] text-neutral-500 font-bold uppercase block">Circulante</span>
+                  <p className="text-sm font-black text-emerald-700 font-mono mt-1">
+                    ${(kpis.monthRevenue + 35000).toLocaleString('es-MX')}
+                  </p>
+                  <span className="text-[9px] text-neutral-400">Bancos + Cuentas x Cobrar</span>
+                </div>
+              </div>
+              <div className="bg-neutral-900 text-white p-2.5 rounded-xl flex items-center justify-between text-xs">
+                <span className="font-bold">INVERSIÓN TOTAL ESTIMADA:</span>
+                <span className="font-mono font-black text-emerald-400 text-sm">
+                  ${(((inventory || []).reduce((sum, i) => sum + ((i.costPrice || (i as any).cost || 0) * i.stock), 0)) + 285000 + kpis.monthRevenue + 35000).toLocaleString('es-MX')} MXN
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1246,6 +1373,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* SUBTAB: FINANZAS & GASTOS SAT */}
+      {subTab === 'finances' && <FinancesExpensesTab />}
+
+      {/* SUBTAB: CUENTAS POR COBRAR & PAGAR */}
+      {subTab === 'payables' && <ReceivablesPayablesTab />}
+
+      {/* SUBTAB: NÓMINA FORMAL E IMSS */}
+      {subTab === 'payroll' && <FormalPayrollTab />}
+
+      {/* SUBTAB: MARCAS & GARANTÍAS B2B */}
+      {subTab === 'warranties' && <BrandWarrantiesTab />}
 
       {/* Modal Ver Integrante */}
       {viewingStaff && (

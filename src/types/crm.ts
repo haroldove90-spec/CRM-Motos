@@ -164,6 +164,23 @@ export interface ServiceOrder {
     ratedAt: string;
   };
   nextServiceReminderDate?: string;
+  notes?: string;
+  estimatedTotal?: number;
+  // Requerimientos 24-OCT: Marcas, garantías, imprevistos y entregas
+  serviceType?: 'particular' | 'mantenimiento_marca' | 'garantia_marca';
+  brandWarrantyFolio?: string;
+  isWarrantyReentry?: boolean;
+  promisedDeliveryDate?: string;
+  additionalFindings?: {
+    id: string;
+    description: string;
+    estimatedCost: number;
+    status?: 'pendiente' | 'aprobada' | 'rechazada';
+    reportedBy: string;
+    createdAt?: string;
+    reportedAt?: string;
+    approvedByClient?: boolean;
+  }[];
 }
 
 export interface Customer {
@@ -201,6 +218,8 @@ export interface InventoryItem {
   compatibleModels: string[]; // e.g. ["Yamaha MT-03", "Yamaha R3", "Italika 250Z"]
   costPrice: number;
   salePrice: number;
+  cost?: number;
+  price?: number;
   stock: number;
   minStock: number;
   location?: string; // e.g. "Estante B-3"
@@ -216,6 +235,12 @@ export interface StaffUser {
   commissionPercentage: number; // e.g. 15% sobre mano de obra
   specialty?: string; // e.g. "Motores 4T y Diagnóstico Eléctrico"
   jobsCompleted?: number;
+  // Nómina formal, IMSS y sueldos reales (para contadora)
+  baseSalary?: number;
+  nssIMSS?: string;
+  payrollFrequency?: 'semanal' | 'quincenal' | 'mensual';
+  bankAccount?: string;
+  curp?: string;
 }
 
 export interface WorkshopSettings {
@@ -301,4 +326,190 @@ export interface ProfecoContract {
   providerSignature?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// 1. Gastos y Egresos Operativos
+export interface Expense {
+  id: string;
+  concept: string; // e.g. Renta local Matriz, CFE / Luz, Insumos de limpieza, Herramienta especial
+  category:
+    | 'renta'
+    | 'servicios'
+    | 'servicios_luz_agua'
+    | 'nomina'
+    | 'nomina_imss'
+    | 'insumos'
+    | 'consumibles_taller'
+    | 'herramientas'
+    | 'mantenimiento_instalaciones'
+    | 'publicidad'
+    | 'impuestos'
+    | 'otro';
+  amount: number;
+  date: string;
+  paymentMethod: 'efectivo' | 'tarjeta' | 'transferencia';
+  invoiceOrTicket?: string;
+  invoiceNumber?: string;
+  taxDeductible?: boolean;
+  notes?: string;
+  registeredBy?: string;
+}
+
+// 2. Proveedores y Cuentas por Pagar
+export interface Supplier {
+  id: string;
+  name: string;
+  rfc?: string;
+  contactName?: string;
+  contactPerson?: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  category?: string;
+  creditDays: number;
+  creditLimit?: number;
+  currentBalance: number;
+  balance?: number; // Saldo pendiente
+}
+
+export interface SupplierInvoice {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  invoiceNumber: string;
+  date: string;
+  dueDate: string;
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  status: 'pendiente' | 'parcial' | 'pagada';
+  items?: { description: string; quantity: number; unitCost: number; total: number }[];
+  notes?: string;
+}
+
+// 3. Nómina Formal y Recibos (para Contadora)
+export interface PayrollRecord {
+  id: string;
+  staffId: string;
+  staffName: string;
+  role: string;
+  period: string; // e.g. "Semana 43 - Octubre 2026"
+  baseSalary: number;
+  commissionsEarned: number;
+  bonus: number;
+  deductions: number; // IMSS, préstamos, retenciones
+  netPay: number;
+  status: 'borrador' | 'pagado';
+  paidAt?: string;
+  paymentMethod?: 'efectivo' | 'transferencia';
+}
+
+// 4. Corte Diario de Caja (Arqueo)
+export interface CashCut {
+  id: string;
+  date: string; // YYYY-MM-DD
+  openedAt: string;
+  closedAt?: string;
+  initialCash: number; // Fondo inicial
+  totalCashSales: number;
+  totalCardSales: number;
+  totalTransferSales: number;
+  totalCashExpenses: number; // Retiros o compras menores
+  expectedCashInDrawer: number;
+  actualCashInDrawer: number;
+  difference: number;
+  status: 'abierta' | 'cerrada';
+  notes?: string;
+  closedBy?: string;
+}
+
+// 5. Ventas Rápidas de Mostrador (Punto de Venta Refacciones)
+export interface CounterSale {
+  id: string;
+  folio: string;
+  date: string;
+  customerName: string;
+  customerPhone?: string;
+  items: {
+    inventoryItemId?: string;
+    partNumber: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  paymentMethod: 'efectivo' | 'tarjeta' | 'transferencia';
+  attendedBy: string;
+  discount?: number;
+}
+
+// 6. Kardex / Movimientos de Almacén
+export interface InventoryMovement {
+  id: string;
+  date: string;
+  itemId: string;
+  partNumber: string;
+  itemName: string;
+  type: 'entrada_compra' | 'salida_taller' | 'salida_mostrador' | 'ajuste_conteo' | 'devolucion' | 'merma';
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  reference?: string; // OS-101, Fac-502, etc.
+  cost?: number;
+  user: string;
+}
+
+// 7. Auditoría y Conteo Físico
+export interface PhysicalCountItem {
+  itemId: string;
+  partNumber: string;
+  name: string;
+  systemStock: number;
+  countedStock: number;
+  difference: number;
+  unitCost: number;
+  differenceValue: number;
+}
+
+// 8. Marcas y Garantías Oficiales (Vento, Dinamo, etc.)
+export interface BrandWarranty {
+  id: string;
+  brand: 'Vento' | 'Dinamo' | 'Italika' | 'Bajaj' | 'Honda' | 'Yamaha' | 'Otra';
+  externalBrandFolio: string; // Folio de reclamo de la agencia
+  orderId?: string;
+  clientName: string;
+  clientPhone: string;
+  motorcycleModel: string;
+  vin: string;
+  claimDate: string;
+  issueDescription: string;
+  evidencePhotos: string[];
+  partsRequested: { description: string; partNumber?: string; status: 'solicitada' | 'recibida' | 'instalada' }[];
+  laborAmountToRecover: number;
+  partsAmountToRecover: number;
+  totalToRecover: number;
+  payerResponsible: 'marca' | 'cliente' | 'compartido';
+  brandResponseStatus: 'en_revision' | 'autorizada' | 'rechazada' | 'pagada';
+  paymentStatus: 'pendiente' | 'facturada' | 'cobrada';
+  brandInvoiceNumber?: string;
+  brandPaidDate?: string;
+  notes?: string;
+}
+
+// 9. Quejas y Satisfacción del Cliente (CRM)
+export interface CustomerComplaint {
+  id: string;
+  date: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  orderId?: string;
+  type: 'queja_calidad' | 'demora' | 'costo' | 'atencion' | 'garantia';
+  description: string;
+  status: 'abierta' | 'en_proceso' | 'resuelta';
+  resolutionNotes?: string;
+  resolvedAt?: string;
 }

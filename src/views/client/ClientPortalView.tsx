@@ -9,8 +9,10 @@ import {
   ShieldCheck,
   BookOpen,
   FileText,
+  HeartHandshake,
 } from 'lucide-react';
 import { HojaDeServicioPDFModal } from '../../components/HojaDeServicioPDFModal';
+import { ComplaintsAndCampaignsTab } from './ComplaintsAndCampaignsTab';
 
 interface ClientPortalViewProps {
   activeModule?: string;
@@ -483,6 +485,16 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
                 </div>
               </div>
             </div>
+          )}
+
+          {/* SUBTAB: QUEJAS & SUGERENCIAS */}
+          {subTab === 'complaints' && (
+            <ComplaintsAndCampaignsTab mode="complaints" matchedOrder={matchedOrder} />
+          )}
+
+          {/* SUBTAB: CAMPAÑAS COMERCIALES & FIDELIZACIÓN */}
+          {subTab === 'campaigns' && (
+            <ComplaintsAndCampaignsTab mode="campaigns" matchedOrder={matchedOrder} />
           )}
         </div>
       ) : (

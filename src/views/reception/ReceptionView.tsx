@@ -26,9 +26,13 @@ import {
   ShieldCheck,
   Printer,
   Sparkles,
+  ShoppingCart,
+  AlertCircle,
 } from 'lucide-react';
 import { TicketModal } from '../../components/TicketModal';
 import { WhatsAppModal } from '../../components/WhatsAppModal';
+import { CounterPOSAndCashCutTab } from './CounterPOSAndCashCutTab';
+import { DeliveryAlertsTab } from './DeliveryAlertsTab';
 
 interface ReceptionViewProps {
   activeModule?: string;
@@ -223,17 +227,35 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         </button>
         <button
           onClick={() => handleTabChange('historial')}
-          className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 ${
-            subTab === 'historial' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'historial' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           <Calendar className="w-3.5 h-3.5" />
           <span>Historial Check-in ({orders.length})</span>
         </button>
         <button
+          onClick={() => handleTabChange('pos')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'pos' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          <ShoppingCart className="w-3.5 h-3.5" />
+          <span>Venta Mostrador & Caja</span>
+        </button>
+        <button
+          onClick={() => handleTabChange('alerts')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'alerts' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>Entregas & Alertas</span>
+        </button>
+        <button
           onClick={() => handleTabChange('profeco')}
-          className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 ${
-            subTab === 'profeco' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'profeco' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -241,8 +263,8 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         </button>
         <button
           onClick={() => handleTabChange('kanban')}
-          className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 ${
-            subTab === 'kanban' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'kanban' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           <Clock className="w-3.5 h-3.5" />
@@ -250,8 +272,8 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         </button>
         <button
           onClick={() => handleTabChange('customers')}
-          className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 ${
-            subTab === 'customers' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'customers' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           <User className="w-3.5 h-3.5" />
@@ -259,8 +281,8 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         </button>
         <button
           onClick={() => handleTabChange('motorcycles')}
-          className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 ${
-            subTab === 'motorcycles' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'motorcycles' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           <Bike className="w-3.5 h-3.5" />
@@ -268,14 +290,25 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         </button>
         <button
           onClick={() => handleTabChange('billing')}
-          className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 ${
-            subTab === 'billing' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'billing' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           <Receipt className="w-3.5 h-3.5" />
           <span>Cotización & Cobro</span>
         </button>
       </div>
+
+      {/* SUBTAB POS & CORTE DE CAJA */}
+      {subTab === 'pos' && <CounterPOSAndCashCutTab />}
+
+      {/* SUBTAB ENTREGAS & ALERTAS */}
+      {subTab === 'alerts' && (
+        <DeliveryAlertsTab
+          onViewOrder={(order) => setSelectedOrder(order)}
+          onContactClient={(order) => setWhatsAppOrder(order)}
+        />
+      )}
 
       {/* SUBTAB 1: NUEVA RECEPCIÓN (CHECKIN CON HOJA OFICIAL) */}
       {subTab === 'checkin' && (

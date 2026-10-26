@@ -22,6 +22,15 @@ import {
   LogOut,
   ShieldCheck,
   Calendar,
+  DollarSign,
+  Wallet,
+  Building2,
+  Tag,
+  AlertCircle,
+  History,
+  ShoppingCart,
+  Boxes,
+  HeartHandshake,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -42,17 +51,23 @@ export const getNavItemsForRole = (role: UserRole): NavItem[] => {
   switch (role) {
     case 'admin':
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'dashboard', label: 'Dashboard & KPIs', icon: LayoutDashboard },
+        { id: 'finances', label: 'Finanzas, Gastos & SAT', icon: DollarSign },
+        { id: 'payables', label: 'Cuentas x Cobrar/Pagar', icon: Wallet },
+        { id: 'payroll', label: 'Nómina Formal e IMSS', icon: Building2 },
+        { id: 'warranties', label: 'Marcas & Garantías B2B', icon: Tag },
         { id: 'kanban', label: 'Tablero OS', icon: KanbanSquare },
         { id: 'staff', label: 'Personal & Comisiones', icon: Users },
         { id: 'profeco', label: 'Contratos PROFECO', icon: ShieldCheck },
-        { id: 'reports', label: 'Reportes & Métricas', icon: BarChart3 },
+        { id: 'reports', label: 'Reportes & Rentabilidad', icon: BarChart3 },
         { id: 'settings', label: 'Ajustes & Supabase', icon: Settings },
       ];
     case 'reception':
       return [
         { id: 'checkin', label: 'Recepción (Check-in)', icon: ClipboardPlus },
         { id: 'historial', label: 'Historial Check-in', icon: Calendar },
+        { id: 'pos', label: 'Venta Mostrador & Caja', icon: ShoppingCart },
+        { id: 'alerts', label: 'Entregas & Alertas', icon: AlertCircle },
         { id: 'profeco', label: 'Contrato PROFECO', icon: ShieldCheck },
         { id: 'kanban', label: 'Órdenes Activas', icon: KanbanSquare },
         { id: 'customers', label: 'Clientes CRM', icon: Users },
@@ -63,22 +78,29 @@ export const getNavItemsForRole = (role: UserRole): NavItem[] => {
       return [
         { id: 'my_jobs', label: 'Trabajos Asignados', icon: Wrench },
         { id: 'stopwatch', label: 'Control de Horas', icon: Clock },
+        { id: 'findings', label: 'Trabajos Adicionales', icon: AlertTriangle },
         { id: 'parts_req', label: 'Pedir Refacciones', icon: PackageCheck },
+        { id: 'reentries', label: 'Garantías & Reingresos', icon: ShieldCheck },
         { id: 'quality', label: 'Pruebas & Calidad', icon: CheckCircle2 },
       ];
     case 'warehouse':
       return [
         { id: 'catalog', label: 'Catálogo de Repuestos', icon: Package },
-        { id: 'requests', label: 'Surtir a Mecánicos', icon: PackageCheck },
+        { id: 'requests', label: 'Surtir a Taller', icon: PackageCheck },
+        { id: 'entries', label: 'Compras & Proveedores', icon: ArrowDownToLine },
+        { id: 'kardex', label: 'Kardex de Movimientos', icon: History },
+        { id: 'division', label: 'Taller vs Mostrador', icon: Boxes },
+        { id: 'audit', label: 'Conteo Físico vs Sistema', icon: CheckCircle2 },
         { id: 'low_stock', label: 'Alertas Bajo Stock', icon: AlertTriangle },
-        { id: 'entries', label: 'Entrada de Piezas', icon: ArrowDownToLine },
       ];
     case 'client':
       return [
         { id: 'status', label: 'Estatus en Vivo', icon: Smartphone },
         { id: 'quote', label: 'Aprobar Cotización', icon: Receipt },
         { id: 'carnet', label: 'Carnet de Servicio', icon: BookOpen },
-        { id: 'contact', label: 'Soporte & Garantía', icon: MessageCircle },
+        { id: 'complaints', label: 'Quejas & Satisfacción', icon: HeartHandshake },
+        { id: 'campaigns', label: 'Campañas & Próximo Serv.', icon: MessageCircle },
+        { id: 'contact', label: 'Soporte & Garantía', icon: ShieldCheck },
       ];
     default:
       return [];

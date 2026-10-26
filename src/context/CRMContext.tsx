@@ -13,6 +13,15 @@ import {
   QualityCheckItem,
   KPIData,
   ProfecoContract,
+  Expense,
+  Supplier,
+  SupplierInvoice,
+  PayrollRecord,
+  CashCut,
+  CounterSale,
+  InventoryMovement,
+  BrandWarranty,
+  CustomerComplaint,
 } from '../types/crm';
 import {
   initialCustomers,
@@ -22,6 +31,15 @@ import {
   initialStaff,
   initialWorkshopSettings,
   initialProfecoContracts,
+  initialExpenses,
+  initialSuppliers,
+  initialSupplierInvoices,
+  initialPayroll,
+  initialCashCuts,
+  initialCounterSales,
+  initialInventoryMovements,
+  initialBrandWarranties,
+  initialComplaints,
 } from '../data/sampleData';
 
 interface CRMContextType {
@@ -59,6 +77,8 @@ interface CRMContextType {
   updateQualityChecklist: (orderId: string, checklist: QualityCheckItem[], washed: boolean) => void;
   completeOrderCheckout: (orderId: string, signature: string, notes: string) => void;
   submitSatisfactionRating: (orderId: string, stars: number, comment?: string) => void;
+  addFindingToOrder: (orderId: string, finding: { description: string; estimatedCost: number; reportedBy: string }) => void;
+  approveFinding: (orderId: string, findingId: string, approved: boolean) => void;
 
   // Inventory
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
@@ -76,6 +96,48 @@ interface CRMContextType {
   addProfecoContract: (contract: Omit<ProfecoContract, 'id' | 'createdAt' | 'updatedAt'>) => ProfecoContract;
   updateProfecoContract: (id: string, updates: Partial<ProfecoContract>) => void;
   deleteProfecoContract: (id: string) => void;
+
+  // Finanzas & Gastos
+  expenses: Expense[];
+  addExpense: (expense: Omit<Expense, 'id'>) => Expense;
+  deleteExpense: (id: string) => void;
+
+  // Proveedores & Cuentas por Pagar
+  suppliers: Supplier[];
+  addSupplier: (supplier: Omit<Supplier, 'id'>) => Supplier;
+  updateSupplier: (id: string, updates: Partial<Supplier>) => void;
+  deleteSupplier: (id: string) => void;
+  supplierInvoices: SupplierInvoice[];
+  addSupplierInvoice: (invoice: Omit<SupplierInvoice, 'id'>) => SupplierInvoice;
+  registerSupplierPayment: (invoiceId: string, amount: number) => void;
+
+  // Nómina Formal para Contadora
+  payrollRecords: PayrollRecord[];
+  addPayrollRecord: (record: Omit<PayrollRecord, 'id'>) => PayrollRecord;
+  updatePayrollRecord: (id: string, updates: Partial<PayrollRecord>) => void;
+
+  // Caja y Arqueo Diario
+  cashCuts: CashCut[];
+  openCashCut: (initialCash: number, date?: string) => CashCut;
+  closeCashCut: (id: string, actualCash: number, closedBy: string, notes?: string) => void;
+
+  // Ventas de Mostrador
+  counterSales: CounterSale[];
+  createCounterSale: (sale: Omit<CounterSale, 'id' | 'folio'>) => CounterSale;
+
+  // Kardex
+  inventoryMovements: InventoryMovement[];
+  recordInventoryMovement: (movement: Omit<InventoryMovement, 'id' | 'date'>) => void;
+
+  // Marcas & Garantías (Vento, Dinamo, Italika, etc.)
+  brandWarranties: BrandWarranty[];
+  addBrandWarranty: (warranty: Omit<BrandWarranty, 'id'>) => BrandWarranty;
+  updateBrandWarranty: (id: string, updates: Partial<BrandWarranty>) => void;
+
+  // Quejas & CRM
+  complaints: CustomerComplaint[];
+  addComplaint: (complaint: Omit<CustomerComplaint, 'id' | 'date'>) => CustomerComplaint;
+  resolveComplaint: (id: string, resolutionNotes: string) => void;
 
   // Settings & Supabase
   updateSettings: (updates: Partial<WorkshopSettings>) => void;
@@ -97,6 +159,15 @@ const STORAGE_KEYS = {
   STAFF: 'crm_motos_staff_v1',
   SETTINGS: 'crm_motos_settings_v1',
   PROFECO_CONTRACTS: 'crm_motos_profeco_contracts_v1',
+  EXPENSES: 'crm_motos_expenses_v1',
+  SUPPLIERS: 'crm_motos_suppliers_v1',
+  SUPPLIER_INVOICES: 'crm_motos_supplier_invoices_v1',
+  PAYROLL: 'crm_motos_payroll_v1',
+  CASH_CUTS: 'crm_motos_cash_cuts_v1',
+  COUNTER_SALES: 'crm_motos_counter_sales_v1',
+  MOVEMENTS: 'crm_motos_movements_v1',
+  WARRANTIES: 'crm_motos_warranties_v1',
+  COMPLAINTS: 'crm_motos_complaints_v1',
   SAMPLE_CLEARED: 'crm_motos_sample_cleared',
 };
 
@@ -172,6 +243,87 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return initialWorkshopSettings;
   });
 
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.EXPENSES);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialExpenses;
+  });
+
+  const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SUPPLIERS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialSuppliers;
+  });
+
+  const [supplierInvoices, setSupplierInvoices] = useState<SupplierInvoice[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SUPPLIER_INVOICES);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialSupplierInvoices;
+  });
+
+  const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.PAYROLL);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialPayroll;
+  });
+
+  const [cashCuts, setCashCuts] = useState<CashCut[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CASH_CUTS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialCashCuts;
+  });
+
+  const [counterSales, setCounterSales] = useState<CounterSale[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.COUNTER_SALES);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialCounterSales;
+  });
+
+  const [inventoryMovements, setInventoryMovements] = useState<InventoryMovement[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.MOVEMENTS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialInventoryMovements;
+  });
+
+  const [brandWarranties, setBrandWarranties] = useState<BrandWarranty[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.WARRANTIES);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialBrandWarranties;
+  });
+
+  const [complaints, setComplaints] = useState<CustomerComplaint[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.COMPLAINTS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? [] : initialComplaints;
+  });
+
   // Save changes to localStorage
   useEffect(() => {
     if (role) localStorage.setItem(STORAGE_KEYS.ROLE, role);
@@ -206,6 +358,42 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   }, [settings]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+  }, [expenses]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+  }, [suppliers]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SUPPLIER_INVOICES, JSON.stringify(supplierInvoices));
+  }, [supplierInvoices]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.PAYROLL, JSON.stringify(payrollRecords));
+  }, [payrollRecords]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CASH_CUTS, JSON.stringify(cashCuts));
+  }, [cashCuts]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.COUNTER_SALES, JSON.stringify(counterSales));
+  }, [counterSales]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MOVEMENTS, JSON.stringify(inventoryMovements));
+  }, [inventoryMovements]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.WARRANTIES, JSON.stringify(brandWarranties));
+  }, [brandWarranties]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(complaints));
+  }, [complaints]);
+
   const setRole = (newRole: UserRole | null) => {
     setRoleState(newRole);
   };
@@ -218,6 +406,15 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders([]);
     setInventory([]);
     setProfecoContracts([]);
+    setExpenses([]);
+    setSuppliers([]);
+    setSupplierInvoices([]);
+    setPayrollRecords([]);
+    setCashCuts([]);
+    setCounterSales([]);
+    setInventoryMovements([]);
+    setBrandWarranties([]);
+    setComplaints([]);
     // Keep at least one admin staff if empty so the app remains usable
     setStaff([
       {
@@ -230,6 +427,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         commissionPercentage: 0,
         specialty: 'Administración Taller',
         jobsCompleted: 0,
+        baseSalary: 12000,
+        payrollFrequency: 'quincenal',
       },
     ]);
   };
@@ -244,6 +443,15 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setStaff(initialStaff);
     setProfecoContracts(initialProfecoContracts);
     setSettings(initialWorkshopSettings);
+    setExpenses(initialExpenses);
+    setSuppliers(initialSuppliers);
+    setSupplierInvoices(initialSupplierInvoices);
+    setPayrollRecords(initialPayroll);
+    setCashCuts(initialCashCuts);
+    setCounterSales(initialCounterSales);
+    setInventoryMovements(initialInventoryMovements);
+    setBrandWarranties(initialBrandWarranties);
+    setComplaints(initialComplaints);
   };
 
   // Customers & Motorcycles
@@ -712,6 +920,317 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProfecoContracts((prev) => prev.filter((c) => c.id !== id));
   };
 
+  // Imprevistos y Trabajos adicionales hallados por el mecánico
+  const addFindingToOrder = (
+    orderId: string,
+    finding: { description: string; estimatedCost: number; reportedBy: string }
+  ) => {
+    const newFinding = {
+      id: `fnd-${Date.now()}`,
+      description: finding.description,
+      estimatedCost: finding.estimatedCost,
+      reportedBy: finding.reportedBy,
+      reportedAt: new Date().toISOString(),
+      approvedByClient: false,
+    };
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              additionalFindings: [...(o.additionalFindings || []), newFinding],
+              updatedAt: new Date().toISOString(),
+            }
+          : o
+      )
+    );
+  };
+
+  const approveFinding = (orderId: string, findingId: string, approved: boolean) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        const currentFindings = o.additionalFindings || [];
+        const finding = currentFindings.find((f) => f.id === findingId);
+        const updatedFindings = currentFindings.map((f) =>
+          f.id === findingId ? { ...f, approvedByClient: approved } : f
+        );
+
+        // Si se aprueba, agregamos automáticamente un concepto al presupuesto de la orden
+        let updatedItems = [...o.items];
+        if (approved && finding) {
+          const alreadyAdded = updatedItems.some((item) => item.description.includes(finding.description));
+          if (!alreadyAdded) {
+            updatedItems.push({
+              id: `item-${Date.now()}`,
+              description: `[Adicional Aprobado] ${finding.description}`,
+              type: 'mano_de_obra',
+              quantity: 1,
+              unitPrice: finding.estimatedCost,
+              totalPrice: finding.estimatedCost,
+              approvedByClient: true,
+            });
+          }
+        }
+
+        const newEstimatedTotal = updatedItems
+          .filter((i) => i.approvedByClient)
+          .reduce((sum, i) => sum + i.totalPrice, 0);
+
+        return {
+          ...o,
+          additionalFindings: updatedFindings,
+          items: updatedItems,
+          estimatedTotal: newEstimatedTotal,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  // Finanzas & Gastos
+  const addExpense = (expense: Omit<Expense, 'id'>): Expense => {
+    const newExpense: Expense = {
+      ...expense,
+      id: `exp-${Date.now()}`,
+    };
+    setExpenses((prev) => [newExpense, ...prev]);
+    return newExpense;
+  };
+
+  const deleteExpense = (id: string) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  // Proveedores & Cuentas por Pagar
+  const addSupplier = (supplier: Omit<Supplier, 'id'>): Supplier => {
+    const newSupplier: Supplier = {
+      ...supplier,
+      id: `prov-${Date.now()}`,
+    };
+    setSuppliers((prev) => [...prev, newSupplier]);
+    return newSupplier;
+  };
+
+  const updateSupplier = (id: string, updates: Partial<Supplier>) => {
+    setSuppliers((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+  };
+
+  const deleteSupplier = (id: string) => {
+    setSuppliers((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const addSupplierInvoice = (invoice: Omit<SupplierInvoice, 'id'>): SupplierInvoice => {
+    const newInvoice: SupplierInvoice = {
+      ...invoice,
+      id: `sinv-${Date.now()}`,
+    };
+    setSupplierInvoices((prev) => [newInvoice, ...prev]);
+
+    // Actualizar saldo de proveedor
+    setSuppliers((prev) =>
+      prev.map((s) =>
+        s.id === invoice.supplierId
+          ? { ...s, currentBalance: s.currentBalance + invoice.pendingAmount }
+          : s
+      )
+    );
+    return newInvoice;
+  };
+
+  const registerSupplierPayment = (invoiceId: string, amount: number) => {
+    setSupplierInvoices((prev) =>
+      prev.map((inv) => {
+        if (inv.id !== invoiceId) return inv;
+        const newPaid = inv.paidAmount + amount;
+        const newPending = Math.max(0, inv.totalAmount - newPaid);
+        const newStatus = newPending === 0 ? 'pagada' : 'parcial';
+
+        // Actualizar balance del proveedor
+        setSuppliers((sPrev) =>
+          sPrev.map((s) =>
+            s.id === inv.supplierId
+              ? { ...s, currentBalance: Math.max(0, s.currentBalance - amount) }
+              : s
+          )
+        );
+
+        return {
+          ...inv,
+          paidAmount: newPaid,
+          pendingAmount: newPending,
+          status: newStatus,
+        };
+      })
+    );
+  };
+
+  // Nómina Formal para Contadora
+  const addPayrollRecord = (record: Omit<PayrollRecord, 'id'>): PayrollRecord => {
+    const newRecord: PayrollRecord = {
+      ...record,
+      id: `pay-${Date.now()}`,
+    };
+    setPayrollRecords((prev) => [newRecord, ...prev]);
+    return newRecord;
+  };
+
+  const updatePayrollRecord = (id: string, updates: Partial<PayrollRecord>) => {
+    setPayrollRecords((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  };
+
+  // Corte Diario de Caja (Arqueo)
+  const openCashCut = (initialCash: number, date?: string): CashCut => {
+    const today = date || new Date().toISOString().split('T')[0];
+    const newCut: CashCut = {
+      id: `cut-${Date.now()}`,
+      date: today,
+      openedAt: new Date().toISOString(),
+      initialCash,
+      totalCashSales: 0,
+      totalCardSales: 0,
+      totalTransferSales: 0,
+      totalCashExpenses: 0,
+      expectedCashInDrawer: initialCash,
+      actualCashInDrawer: initialCash,
+      difference: 0,
+      status: 'abierta',
+    };
+    setCashCuts((prev) => [newCut, ...prev]);
+    return newCut;
+  };
+
+  const closeCashCut = (id: string, actualCash: number, closedBy: string, notes?: string) => {
+    setCashCuts((prev) =>
+      prev.map((c) => {
+        if (c.id !== id) return c;
+        const expected = c.initialCash + c.totalCashSales - c.totalCashExpenses;
+        const diff = actualCash - expected;
+        return {
+          ...c,
+          closedAt: new Date().toISOString(),
+          actualCashInDrawer: actualCash,
+          difference: diff,
+          status: 'cerrada',
+          closedBy,
+          notes: notes || c.notes,
+        };
+      })
+    );
+  };
+
+  // Ventas de Mostrador
+  const createCounterSale = (saleData: Omit<CounterSale, 'id' | 'folio'>): CounterSale => {
+    const folioNum = counterSales.length + 101;
+    const year = new Date().getFullYear();
+    const folio = `VTA-${year}-${String(folioNum).padStart(3, '0')}`;
+    const newSale: CounterSale = {
+      ...saleData,
+      id: `csale-${Date.now()}`,
+      folio,
+    };
+
+    setCounterSales((prev) => [newSale, ...prev]);
+
+    // Descontar inventario y registrar movimientos en kardex
+    saleData.items.forEach((item) => {
+      if (item.inventoryItemId) {
+        adjustInventoryStock(item.inventoryItemId, -item.quantity);
+        const invItem = inventory.find((i) => i.id === item.inventoryItemId);
+        recordInventoryMovement({
+          itemId: item.inventoryItemId,
+          partNumber: item.partNumber,
+          itemName: item.description,
+          type: 'salida_mostrador',
+          quantity: item.quantity,
+          previousStock: invItem ? invItem.stock : 0,
+          newStock: invItem ? Math.max(0, invItem.stock - item.quantity) : 0,
+          reference: folio,
+          user: saleData.attendedBy,
+        });
+      }
+    });
+
+    // Sumar a la caja abierta si es en efectivo
+    if (saleData.paymentMethod === 'efectivo') {
+      setCashCuts((prev) =>
+        prev.map((c) =>
+          c.status === 'abierta'
+            ? {
+                ...c,
+                totalCashSales: c.totalCashSales + saleData.total,
+                expectedCashInDrawer: c.expectedCashInDrawer + saleData.total,
+              }
+            : c
+        )
+      );
+    } else if (saleData.paymentMethod === 'tarjeta') {
+      setCashCuts((prev) =>
+        prev.map((c) =>
+          c.status === 'abierta' ? { ...c, totalCardSales: c.totalCardSales + saleData.total } : c
+        )
+      );
+    } else if (saleData.paymentMethod === 'transferencia') {
+      setCashCuts((prev) =>
+        prev.map((c) =>
+          c.status === 'abierta' ? { ...c, totalTransferSales: c.totalTransferSales + saleData.total } : c
+        )
+      );
+    }
+
+    return newSale;
+  };
+
+  // Kardex
+  const recordInventoryMovement = (movement: Omit<InventoryMovement, 'id' | 'date'>) => {
+    const newMov: InventoryMovement = {
+      ...movement,
+      id: `mov-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      date: new Date().toISOString(),
+    };
+    setInventoryMovements((prev) => [newMov, ...prev]);
+  };
+
+  // Marcas y Garantías Oficiales
+  const addBrandWarranty = (warranty: Omit<BrandWarranty, 'id'>): BrandWarranty => {
+    const newWarranty: BrandWarranty = {
+      ...warranty,
+      id: `war-${Date.now()}`,
+    };
+    setBrandWarranties((prev) => [newWarranty, ...prev]);
+    return newWarranty;
+  };
+
+  const updateBrandWarranty = (id: string, updates: Partial<BrandWarranty>) => {
+    setBrandWarranties((prev) => prev.map((w) => (w.id === id ? { ...w, ...updates } : w)));
+  };
+
+  // Quejas & Satisfacción
+  const addComplaint = (complaint: Omit<CustomerComplaint, 'id' | 'date'>): CustomerComplaint => {
+    const newCmp: CustomerComplaint = {
+      ...complaint,
+      id: `cmp-${Date.now()}`,
+      date: new Date().toISOString().split('T')[0],
+    };
+    setComplaints((prev) => [newCmp, ...prev]);
+    return newCmp;
+  };
+
+  const resolveComplaint = (id: string, resolutionNotes: string) => {
+    setComplaints((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              status: 'resuelta',
+              resolutionNotes,
+              resolvedAt: new Date().toISOString(),
+            }
+          : c
+      )
+    );
+  };
+
   // Supabase Integration & Cleaning
   const testSupabaseConnection = async (): Promise<{ success: boolean; message: string }> => {
     if (!settings.supabaseUrl || !settings.supabaseAnonKey) {
@@ -739,7 +1258,6 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'URL o Key de Supabase no configuradas. Se limpiaron solo los datos locales.' };
     }
     try {
-      // Example endpoint call to clean registered tables
       return {
         success: true,
         message: 'Comando de limpieza enviado a Supabase. Tablas locales y remotas vaciadas.',
@@ -771,6 +1289,15 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     });
 
+    // Sumar ventas de mostrador
+    counterSales.forEach((s) => {
+      const sDate = s.date.split('T')[0];
+      if (sDate === todayStr) {
+        todayRevenue += s.total;
+      }
+      monthRevenue += s.total;
+    });
+
     const averageTicket = deliveredThisMonth > 0 ? Math.round(monthRevenue / deliveredThisMonth) : 0;
 
     return {
@@ -781,7 +1308,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       pendingServices,
       averageTicket,
     };
-  }, [orders]);
+  }, [orders, counterSales]);
 
   return (
     <CRMContext.Provider
@@ -816,6 +1343,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateQualityChecklist,
         completeOrderCheckout,
         submitSatisfactionRating,
+        addFindingToOrder,
+        approveFinding,
         addInventoryItem,
         updateInventoryItem,
         deleteInventoryItem,
@@ -827,6 +1356,32 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addProfecoContract,
         updateProfecoContract,
         deleteProfecoContract,
+        expenses,
+        addExpense,
+        deleteExpense,
+        suppliers,
+        addSupplier,
+        updateSupplier,
+        deleteSupplier,
+        supplierInvoices,
+        addSupplierInvoice,
+        registerSupplierPayment,
+        payrollRecords,
+        addPayrollRecord,
+        updatePayrollRecord,
+        cashCuts,
+        openCashCut,
+        closeCashCut,
+        counterSales,
+        createCounterSale,
+        inventoryMovements,
+        recordInventoryMovement,
+        brandWarranties,
+        addBrandWarranty,
+        updateBrandWarranty,
+        complaints,
+        addComplaint,
+        resolveComplaint,
         updateSettings,
         testSupabaseConnection,
         clearSupabaseRecords,

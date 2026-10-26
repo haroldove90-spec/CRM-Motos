@@ -16,6 +16,7 @@ import { OrderDetailModal } from '../../components/OrderDetailModal';
 import { KanbanBoard } from '../../components/KanbanBoard';
 import { HojaDeServicioPDFModal } from '../../components/HojaDeServicioPDFModal';
 import { EditOrderModal } from '../../components/EditOrderModal';
+import { AdditionalFindingsAndReentriesTab } from './AdditionalFindingsAndReentriesTab';
 
 interface MechanicViewProps {
   activeModule?: string;
@@ -145,32 +146,48 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
       <div className="flex border-b border-neutral-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
         <button
           onClick={() => handleTabChange('my_jobs')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'my_jobs' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'my_jobs' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           Tablero Kanban Asignado
         </button>
         <button
-          onClick={() => handleTabChange('stopwatch')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'stopwatch' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          onClick={() => handleTabChange('findings')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'findings' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
-          Control de Horas & Cronómetros
+          Trabajos Adicionales / Imprevistos
         </button>
         <button
           onClick={() => handleTabChange('parts_req')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'parts_req' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'parts_req' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           Pedir Refacciones al Almacén
         </button>
         <button
+          onClick={() => handleTabChange('reentries')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'reentries' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Garantías & Reingresos
+        </button>
+        <button
+          onClick={() => handleTabChange('stopwatch')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'stopwatch' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Control de Horas & Cronómetros
+        </button>
+        <button
           onClick={() => handleTabChange('quality')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'quality' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
+            subTab === 'quality' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
           Pruebas de Ruta & Calidad
@@ -448,6 +465,22 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
             ))}
           </div>
         </div>
+      )}
+
+      {/* SUBTAB: TRABAJOS ADICIONALES / IMPREVISTOS */}
+      {subTab === 'findings' && (
+        <AdditionalFindingsAndReentriesTab
+          mode="findings"
+          onViewOrder={(order) => setSelectedOrder(order)}
+        />
+      )}
+
+      {/* SUBTAB: GARANTÍAS & REINGRESOS */}
+      {subTab === 'reentries' && (
+        <AdditionalFindingsAndReentriesTab
+          mode="reentries"
+          onViewOrder={(order) => setSelectedOrder(order)}
+        />
       )}
 
       {selectedOrder && (
