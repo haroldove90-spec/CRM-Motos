@@ -24,7 +24,6 @@ import { KanbanBoard } from '../../components/KanbanBoard';
 import { HojaDeServicioPDFModal } from '../../components/HojaDeServicioPDFModal';
 import { EditOrderModal } from '../../components/EditOrderModal';
 import { AdditionalFindingsAndReentriesTab } from './AdditionalFindingsAndReentriesTab';
-import { BrandControlTab } from './BrandControlTab';
 
 interface MechanicViewProps {
   activeModule?: string;
@@ -724,10 +723,6 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
         </div>
       )}
 
-      {/* SUBTAB: CONTROL DE MARCAS (VENTO, DINAMO, MB, BDS, VELOCI, CARABELA) */}
-      {subTab === 'brand_control' && (
-        <BrandControlTab />
-      )}
 
       {/* SUBTAB: TRABAJOS ADICIONALES / IMPREVISTOS */}
       {subTab === 'findings' && (

@@ -76,13 +76,21 @@ export const getNavItemsForRole = (role: UserRole): NavItem[] => {
       ];
     case 'mechanic':
       return [
-        { id: 'brand_control', label: 'Control de Marcas', icon: Tag },
         { id: 'my_jobs', label: 'Trabajos Asignados', icon: Wrench },
         { id: 'stopwatch', label: 'Control de Horas', icon: Clock },
         { id: 'findings', label: 'Trabajos Adicionales', icon: AlertTriangle },
         { id: 'parts_req', label: 'Pedir Refacciones', icon: PackageCheck },
         { id: 'reentries', label: 'Garantías & Reingresos', icon: ShieldCheck },
         { id: 'quality', label: 'Pruebas & Calidad', icon: CheckCircle2 },
+      ];
+    case 'brand_control':
+      return [
+        { id: 'vento', label: 'Vento', icon: Tag, badge: 'VENTO' },
+        { id: 'dinamo', label: 'Dinamo', icon: Tag, badge: 'DINAMO' },
+        { id: 'mb', label: 'MB Motos', icon: Tag, badge: 'MB' },
+        { id: 'bds', label: 'BDS', icon: Tag, badge: 'BDS' },
+        { id: 'veloci', label: 'Veloci', icon: Tag, badge: 'VELOCI' },
+        { id: 'carabela', label: 'Carabela', icon: Tag, badge: 'CARABELA' },
       ];
     case 'warehouse':
       return [
@@ -117,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const items = getNavItemsForRole(currentRole);
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-[#010101] border-r border-[#AAA8A9]/20 text-[#AAA8A9] shrink-0 min-h-[calc(100vh-53px)] select-none">
+    <aside className="hidden lg:flex flex-col w-64 bg-[#010101] border-r border-[#AAA8A9]/20 text-[#AAA8A9] shrink-0 min-h-[calc(100vh-53px)] select-none">
       {/* Role Title Bar */}
       <div className="px-5 py-4 border-b border-[#AAA8A9]/20">
         <span className="text-[10px] font-bold tracking-widest uppercase text-[#AAA8A9]">
@@ -126,6 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <h2 className="text-sm font-extrabold text-white mt-0.5">
           {currentRole === 'admin' && 'Administración & KPIs'}
           {currentRole === 'reception' && 'Recepción & Asesoría'}
+          {currentRole === 'brand_control' && 'Control de Marcas'}
           {currentRole === 'mechanic' && 'Taller & Mecánicos'}
           {currentRole === 'warehouse' && 'Almacén & Refacciones'}
           {currentRole === 'client' && 'Portal de Clientes'}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserRole } from '../types/crm';
-import { ShieldCheck, UserCheck, Wrench, Package, User, Trash2, RefreshCw } from 'lucide-react';
+import { ShieldCheck, UserCheck, Wrench, Package, User, Trash2, RefreshCw, Tag } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 import { useCRM } from '../context/CRMContext';
 
@@ -25,6 +25,13 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole }) => {
       subtitle: 'Asesor de Servicio',
       icon: UserCheck,
       badge: 'Atención & Check-in',
+    },
+    {
+      id: 'brand_control' as UserRole,
+      title: 'Control de Marcas',
+      subtitle: '6 Marcas B2B',
+      icon: Tag,
+      badge: 'Vento, Dinamo, MB...',
     },
     {
       id: 'mechanic' as UserRole,
@@ -69,7 +76,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole }) => {
         </div>
       </div>
 
-      {/* Center Role Cards Grid: 2 columns mobile / 5 columns desktop */}
+      {/* Center Role Cards Grid: 2 columns mobile / 3 columns tablet / 6 columns desktop */}
       <div className="w-full max-w-6xl mx-auto my-auto py-8 z-10">
         <div className="text-center mb-8">
           <span className="text-xs font-bold uppercase tracking-widest text-[#AAA8A9] block">
@@ -80,7 +87,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole }) => {
           </h1>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {roles.map((r) => {
             const Icon = r.icon;
             return (

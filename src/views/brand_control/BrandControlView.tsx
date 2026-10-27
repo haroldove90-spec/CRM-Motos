@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCRM } from '../../context/CRMContext';
 import {
   BrandControlKey,
@@ -105,7 +105,15 @@ const BRANDS: BrandConfig[] = [
   },
 ];
 
-export const BrandControlTab: React.FC = () => {
+interface BrandControlViewProps {
+  activeModule?: string;
+  onSelectModule?: (mod: string) => void;
+}
+
+export const BrandControlView: React.FC<BrandControlViewProps> = ({
+  activeModule = 'vento',
+  onSelectModule,
+}) => {
   const {
     brandControlData,
     addBrandControlRecord,
@@ -113,7 +121,26 @@ export const BrandControlTab: React.FC = () => {
     deleteBrandControlRecord,
   } = useCRM();
 
-  const [activeBrand, setActiveBrand] = useState<BrandControlKey>('vento');
+  const [activeBrand, setActiveBrand] = useState<BrandControlKey>(() => {
+    if (activeModule && ['vento', 'dinamo', 'mb', 'bds', 'veloci', 'carabela'].includes(activeModule)) {
+      return activeModule as BrandControlKey;
+    }
+    return 'vento';
+  });
+
+  useEffect(() => {
+    if (activeModule && ['vento', 'dinamo', 'mb', 'bds', 'veloci', 'carabela'].includes(activeModule)) {
+      setActiveBrand(activeModule as BrandControlKey);
+    }
+  }, [activeModule]);
+
+  const handleBrandChange = (brandKey: BrandControlKey) => {
+    setActiveBrand(brandKey);
+    if (onSelectModule) {
+      onSelectModule(brandKey);
+    }
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modals state
@@ -400,7 +427,7 @@ export const BrandControlTab: React.FC = () => {
             <button
               key={b.key}
               onClick={() => {
-                setActiveBrand(b.key);
+                handleBrandChange(b.key);
                 setSearchTerm('');
               }}
               className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between text-left relative overflow-hidden ${
@@ -1791,3 +1818,5 @@ export const BrandControlTab: React.FC = () => {
     </div>
   );
 };
+
+export const BrandControlTab = BrandControlView;

@@ -12,6 +12,7 @@ import {
   Package,
   User,
   ChevronDown,
+  Tag,
 } from 'lucide-react';
 import { useCRM } from '../context/CRMContext';
 
@@ -26,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({ currentRole }) => {
   const roleMeta: Record<UserRole, { label: string; icon: React.ElementType }> = {
     admin: { label: 'Administrador', icon: ShieldCheck },
     reception: { label: 'Recepción', icon: UserCheck },
+    brand_control: { label: 'Control de Marcas', icon: Tag },
     mechanic: { label: 'Mecánico', icon: Wrench },
     warehouse: { label: 'Almacén', icon: Package },
     client: { label: 'Portal Cliente', icon: User },

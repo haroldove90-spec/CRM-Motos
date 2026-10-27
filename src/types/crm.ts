@@ -2,7 +2,7 @@
  * Types and interfaces for CRM Motos - Sistema Integral de Gestión para Talleres
  */
 
-export type UserRole = 'admin' | 'reception' | 'mechanic' | 'warehouse' | 'client';
+export type UserRole = 'admin' | 'reception' | 'mechanic' | 'warehouse' | 'client' | 'brand_control';
 
 export type OrderStatus =
   | 'pendiente'               // Fase 1: Check-in realizado, esperando asignación
