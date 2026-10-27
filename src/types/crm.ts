@@ -513,3 +513,108 @@ export interface CustomerComplaint {
   resolutionNotes?: string;
   resolvedAt?: string;
 }
+
+// 10. Módulo Técnico: Control de Marcas (Vento, Dinamo, MB, BDS, Veloci, Carabela)
+export type BrandControlKey = 'vento' | 'dinamo' | 'mb' | 'bds' | 'veloci' | 'carabela';
+
+export interface BrandVentoRecord {
+  id: string;
+  vin: string;
+  ticket: string;
+  modelo: string;
+  fecha: string;
+  armado: boolean;
+  activado: boolean;
+  cotizacion: string;
+  garantia: string;
+  tienda: string;
+  ventonet: 'SI' | 'NO';
+  facturado: 'SI' | 'NO';
+  pagado: 'SI' | 'NO';
+  estados: 'AUT. PENDIENTE' | 'CERRADO' | 'PAGO APROBADO' | 'REVISION DE DAÑOS' | 'RECHAZADO' | string;
+  createdAt?: string;
+}
+
+export interface BrandDinamoRecord {
+  id: string;
+  chasis: string;
+  modelo: string;
+  fecha: string;
+  agencia: string;
+  armado: boolean;
+  activado: boolean;
+  garantia: boolean;
+  servicioPrepagado: boolean | string;
+  gestor: string;
+  facturado: 'SI' | 'NO';
+  cantidad: number;
+  numeroFactura: string;
+  cobrado: 'SI' | 'NO';
+  createdAt?: string;
+}
+
+export interface BrandMBRecord {
+  id: string;
+  vin: string;
+  fecha: string;
+  modelo: string;
+  tienda: string;
+  armado: boolean;
+  activado: boolean;
+  garantia: boolean;
+  estado: string;
+  folioPCobro: string;
+  facturado: 'SI' | 'NO';
+  pagado: 'SI' | 'NO';
+  createdAt?: string;
+}
+
+export interface BrandBDSRecord {
+  id: string;
+  vin: string;
+  modelo: string;
+  fecha: string;
+  armado: boolean;
+  activado: boolean;
+  garantia: boolean;
+  facturado: 'SI' | 'NO' | 'X';
+  cantidad: number;
+  numeroDeFactura: string;
+  cobrado: 'SI' | 'NO';
+  createdAt?: string;
+}
+
+export interface BrandVelociRecord {
+  id: string;
+  vin: string;
+  fecha: string;
+  armado: boolean;
+  activado: boolean;
+  garantia: boolean;
+  facturado: 'SI' | 'NO';
+  cobrado: 'SI' | 'NO';
+  modelo?: string;
+  createdAt?: string;
+}
+
+export interface BrandCarabelaRecord {
+  id: string;
+  vin: string;
+  fecha: string;
+  armado: boolean;
+  activado: boolean;
+  garantia: boolean;
+  facturado: 'SI' | 'NO';
+  cobrado: 'SI' | 'NO';
+  modelo?: string;
+  createdAt?: string;
+}
+
+export interface BrandControlData {
+  vento: BrandVentoRecord[];
+  dinamo: BrandDinamoRecord[];
+  mb: BrandMBRecord[];
+  bds: BrandBDSRecord[];
+  veloci: BrandVelociRecord[];
+  carabela: BrandCarabelaRecord[];
+}

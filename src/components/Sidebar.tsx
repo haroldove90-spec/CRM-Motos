@@ -76,6 +76,7 @@ export const getNavItemsForRole = (role: UserRole): NavItem[] => {
       ];
     case 'mechanic':
       return [
+        { id: 'brand_control', label: 'Control de Marcas', icon: Tag },
         { id: 'my_jobs', label: 'Trabajos Asignados', icon: Wrench },
         { id: 'stopwatch', label: 'Control de Horas', icon: Clock },
         { id: 'findings', label: 'Trabajos Adicionales', icon: AlertTriangle },

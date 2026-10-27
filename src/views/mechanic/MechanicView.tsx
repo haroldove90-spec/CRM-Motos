@@ -11,12 +11,14 @@ import {
   FileText,
   Edit2,
   Trash2,
+  Tag,
 } from 'lucide-react';
 import { OrderDetailModal } from '../../components/OrderDetailModal';
 import { KanbanBoard } from '../../components/KanbanBoard';
 import { HojaDeServicioPDFModal } from '../../components/HojaDeServicioPDFModal';
 import { EditOrderModal } from '../../components/EditOrderModal';
 import { AdditionalFindingsAndReentriesTab } from './AdditionalFindingsAndReentriesTab';
+import { BrandControlTab } from './BrandControlTab';
 
 interface MechanicViewProps {
   activeModule?: string;
@@ -144,6 +146,16 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
 
       {/* Submodule tabs */}
       <div className="flex border-b border-neutral-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
+        <button
+          onClick={() => handleTabChange('brand_control')}
+          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            subTab === 'brand_control' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          <Tag className="w-3.5 h-3.5" />
+          <span>Control de Marcas</span>
+          <span className="px-1.5 py-0.2 bg-[#DD040F] text-white text-[9px] rounded-full font-black">6</span>
+        </button>
         <button
           onClick={() => handleTabChange('my_jobs')}
           className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
@@ -465,6 +477,11 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
             ))}
           </div>
         </div>
+      )}
+
+      {/* SUBTAB: CONTROL DE MARCAS (VENTO, DINAMO, MB, BDS, VELOCI, CARABELA) */}
+      {subTab === 'brand_control' && (
+        <BrandControlTab />
       )}
 
       {/* SUBTAB: TRABAJOS ADICIONALES / IMPREVISTOS */}

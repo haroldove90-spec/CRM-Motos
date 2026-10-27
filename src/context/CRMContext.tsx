@@ -22,6 +22,8 @@ import {
   InventoryMovement,
   BrandWarranty,
   CustomerComplaint,
+  BrandControlData,
+  BrandControlKey,
 } from '../types/crm';
 import {
   initialCustomers,
@@ -40,6 +42,7 @@ import {
   initialInventoryMovements,
   initialBrandWarranties,
   initialComplaints,
+  initialBrandControlData,
 } from '../data/sampleData';
 
 interface CRMContextType {
@@ -139,6 +142,12 @@ interface CRMContextType {
   addComplaint: (complaint: Omit<CustomerComplaint, 'id' | 'date'>) => CustomerComplaint;
   resolveComplaint: (id: string, resolutionNotes: string) => void;
 
+  // Control de Marcas (Vento, Dinamo, MB, BDS, Veloci, Carabela)
+  brandControlData: BrandControlData;
+  addBrandControlRecord: (brand: BrandControlKey, record: any) => void;
+  updateBrandControlRecord: (brand: BrandControlKey, id: string, updates: any) => void;
+  deleteBrandControlRecord: (brand: BrandControlKey, id: string) => void;
+
   // Settings & Supabase
   updateSettings: (updates: Partial<WorkshopSettings>) => void;
   testSupabaseConnection: () => Promise<{ success: boolean; message: string }>;
@@ -168,6 +177,7 @@ const STORAGE_KEYS = {
   MOVEMENTS: 'crm_motos_movements_v1',
   WARRANTIES: 'crm_motos_warranties_v1',
   COMPLAINTS: 'crm_motos_complaints_v1',
+  BRAND_CONTROL: 'crm_motos_brand_control_v1',
   SAMPLE_CLEARED: 'crm_motos_sample_cleared',
 };
 
@@ -324,6 +334,15 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return sampleCleared ? [] : initialComplaints;
   });
 
+  const [brandControlData, setBrandControlData] = useState<BrandControlData>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.BRAND_CONTROL);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    const sampleCleared = localStorage.getItem(STORAGE_KEYS.SAMPLE_CLEARED) === 'true';
+    return sampleCleared ? { vento: [], dinamo: [], mb: [], bds: [], veloci: [], carabela: [] } : initialBrandControlData;
+  });
+
   // Save changes to localStorage
   useEffect(() => {
     if (role) localStorage.setItem(STORAGE_KEYS.ROLE, role);
@@ -394,6 +413,10 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(complaints));
   }, [complaints]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.BRAND_CONTROL, JSON.stringify(brandControlData));
+  }, [brandControlData]);
+
   const setRole = (newRole: UserRole | null) => {
     setRoleState(newRole);
   };
@@ -415,6 +438,14 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setInventoryMovements([]);
     setBrandWarranties([]);
     setComplaints([]);
+    setBrandControlData({
+      vento: [],
+      dinamo: [],
+      mb: [],
+      bds: [],
+      veloci: [],
+      carabela: [],
+    });
     // Keep at least one admin staff if empty so the app remains usable
     setStaff([
       {
@@ -452,6 +483,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setInventoryMovements(initialInventoryMovements);
     setBrandWarranties(initialBrandWarranties);
     setComplaints(initialComplaints);
+    setBrandControlData(initialBrandControlData);
   };
 
   // Customers & Motorcycles
@@ -1268,6 +1300,35 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Módulo Técnico: Control de Marcas (Vento, Dinamo, MB, BDS, Veloci, Carabela)
+  const addBrandControlRecord = (brand: BrandControlKey, record: any) => {
+    const newRecord = {
+      ...record,
+      id: `${brand}-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setBrandControlData((prev) => ({
+      ...prev,
+      [brand]: [newRecord, ...(prev[brand] || [])],
+    }));
+  };
+
+  const updateBrandControlRecord = (brand: BrandControlKey, id: string, updates: any) => {
+    setBrandControlData((prev) => ({
+      ...prev,
+      [brand]: (prev[brand] || []).map((item: any) =>
+        item.id === id ? { ...item, ...updates } : item
+      ),
+    }));
+  };
+
+  const deleteBrandControlRecord = (brand: BrandControlKey, id: string) => {
+    setBrandControlData((prev) => ({
+      ...prev,
+      [brand]: (prev[brand] || []).filter((item: any) => item.id !== id),
+    }));
+  };
+
   // Computed KPIs
   const kpis: KPIData = React.useMemo(() => {
     const activeRepairs = orders.filter((o) => ['en_diagnostico', 'esperando_aprobacion', 'en_reparacion', 'esperando_refaccion', 'pruebas_calidad'].includes(o.status)).length;
@@ -1382,6 +1443,10 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         complaints,
         addComplaint,
         resolveComplaint,
+        brandControlData,
+        addBrandControlRecord,
+        updateBrandControlRecord,
+        deleteBrandControlRecord,
         updateSettings,
         testSupabaseConnection,
         clearSupabaseRecords,
