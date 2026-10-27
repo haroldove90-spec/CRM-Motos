@@ -136,41 +136,6 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
         </div>
       </div>
 
-      {/* Client Subtabs Bar */}
-      <div className="flex border-b border-neutral-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
-        <button
-          onClick={() => handleTabChange('status')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'status' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
-          }`}
-        >
-          Estatus en Vivo
-        </button>
-        <button
-          onClick={() => handleTabChange('quote')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'quote' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
-          }`}
-        >
-          Aprobar Cotización
-        </button>
-        <button
-          onClick={() => handleTabChange('carnet')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'carnet' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
-          }`}
-        >
-          Carnet de Servicio
-        </button>
-        <button
-          onClick={() => handleTabChange('contact')}
-          className={`py-3 px-3 border-b-2 transition ${
-            subTab === 'contact' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500'
-          }`}
-        >
-          Contacto & Taller
-        </button>
-      </div>
 
       {matchedOrder ? (
         <div className="space-y-6">

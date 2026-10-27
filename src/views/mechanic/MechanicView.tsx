@@ -12,6 +12,12 @@ import {
   Edit2,
   Trash2,
   Tag,
+  Search,
+  List,
+  KanbanSquare,
+  Phone,
+  CheckCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { OrderDetailModal } from '../../components/OrderDetailModal';
 import { KanbanBoard } from '../../components/KanbanBoard';
@@ -29,13 +35,26 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
   activeModule = 'my_jobs',
   onSelectModule,
 }) => {
-  const { orders, staff, inventory, toggleOrderTimer, addItemToOrder, deleteServiceOrder } = useCRM();
+  const {
+    orders,
+    staff,
+    inventory,
+    toggleOrderTimer,
+    addItemToOrder,
+    deleteServiceOrder,
+    updateOrderStatus,
+  } = useCRM();
   const mechanics = staff.filter((s) => s.role === 'mechanic');
   const [selectedMechanicId, setSelectedMechanicId] = useState<string>(mechanics[0]?.id || '');
   const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
   const [pdfOrder, setPdfOrder] = useState<ServiceOrder | null>(null);
   const [editOrder, setEditOrder] = useState<ServiceOrder | null>(null);
   const [subTab, setSubTab] = useState<string>(activeModule);
+
+  // Horizontal table controls for assigned jobs
+  const [jobsViewMode, setJobsViewMode] = useState<'table' | 'kanban'>('table');
+  const [jobsSearch, setJobsSearch] = useState('');
+  const [jobsStatusFilter, setJobsStatusFilter] = useState('all');
 
   useEffect(() => {
     if (activeModule) {
@@ -54,6 +73,22 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
   const assignedOrders = orders.filter(
     (o) => !selectedMechanicId || o.assignedMechanicId === selectedMechanicId
   );
+
+  // Filtered jobs for horizontal list
+  const filteredJobs = assignedOrders.filter((o) => {
+    if (jobsStatusFilter !== 'all' && o.status !== jobsStatusFilter) return false;
+    if (!jobsSearch.trim()) return true;
+    const q = jobsSearch.toLowerCase();
+    return (
+      o.id.toLowerCase().includes(q) ||
+      (o.orderNumber && o.orderNumber.toString().includes(q)) ||
+      o.customerName.toLowerCase().includes(q) ||
+      o.customerPhone.includes(q) ||
+      o.motorcycleInfo.brand.toLowerCase().includes(q) ||
+      o.motorcycleInfo.model.toLowerCase().includes(q) ||
+      (o.motorcycleInfo.plate && o.motorcycleInfo.plate.toLowerCase().includes(q))
+    );
+  });
 
   // Quick part request state
   const [reqOrderId, setReqOrderId] = useState<string>(assignedOrders[0]?.id || '');
@@ -144,74 +179,284 @@ export const MechanicView: React.FC<MechanicViewProps> = ({
         </div>
       </div>
 
-      {/* Submodule tabs */}
-      <div className="flex border-b border-neutral-200 bg-white px-4 rounded-xl gap-2 overflow-x-auto text-xs font-bold shadow-2xs">
-        <button
-          onClick={() => handleTabChange('brand_control')}
-          className={`py-3 px-3 border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
-            subTab === 'brand_control' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          <Tag className="w-3.5 h-3.5" />
-          <span>Control de Marcas</span>
-          <span className="px-1.5 py-0.2 bg-[#DD040F] text-white text-[9px] rounded-full font-black">6</span>
-        </button>
-        <button
-          onClick={() => handleTabChange('my_jobs')}
-          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
-            subTab === 'my_jobs' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Tablero Kanban Asignado
-        </button>
-        <button
-          onClick={() => handleTabChange('findings')}
-          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
-            subTab === 'findings' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Trabajos Adicionales / Imprevistos
-        </button>
-        <button
-          onClick={() => handleTabChange('parts_req')}
-          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
-            subTab === 'parts_req' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Pedir Refacciones al Almacén
-        </button>
-        <button
-          onClick={() => handleTabChange('reentries')}
-          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
-            subTab === 'reentries' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Garantías & Reingresos
-        </button>
-        <button
-          onClick={() => handleTabChange('stopwatch')}
-          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
-            subTab === 'stopwatch' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Control de Horas & Cronómetros
-        </button>
-        <button
-          onClick={() => handleTabChange('quality')}
-          className={`py-3 px-3 border-b-2 whitespace-nowrap transition ${
-            subTab === 'quality' ? 'border-[#DD040F] text-[#DD040F]' : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Pruebas de Ruta & Calidad
-        </button>
-      </div>
-
-      {/* SUBTAB 1: MY JOBS (KANBAN) */}
+      {/* SUBTAB 1: TRABAJOS ASIGNADOS (HISTORIAL / REGISTROS EN FORMATO HORIZONTAL) */}
       {subTab === 'my_jobs' && (
-        <KanbanBoard
-          mechanicFilterId={selectedMechanicId || undefined}
-          onSelectOrder={(order) => setSelectedOrder(order)}
-        />
+        <div className="space-y-4">
+          {/* Header & Controls */}
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-extrabold text-base text-[#010101] flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-[#DD040F]" />
+                <span>Trabajos Asignados en Taller (Lista Horizontal)</span>
+              </h3>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Control y seguimiento horizontal de órdenes de trabajo, cronómetros de diagnóstico y cambio de etapas.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Search */}
+              <div className="relative w-60 sm:w-72">
+                <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Buscar orden, cliente, moto, placa..."
+                  value={jobsSearch}
+                  onChange={(e) => setJobsSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-[#DD040F]"
+                />
+              </div>
+
+              {/* Status Filter */}
+              <select
+                value={jobsStatusFilter}
+                onChange={(e) => setJobsStatusFilter(e.target.value)}
+                className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-800 outline-none"
+              >
+                <option value="all">Todos los Estados ({assignedOrders.length})</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="en_diagnostico">En Diagnóstico</option>
+                <option value="esperando_aprobacion">Esperando Aprobación</option>
+                <option value="en_reparacion">En Reparación</option>
+                <option value="esperando_refaccion">Falta Refacción</option>
+                <option value="pruebas_calidad">Pruebas y Calidad</option>
+                <option value="listo_entrega">Listo para Entrega</option>
+                <option value="entregado">Entregado</option>
+              </select>
+
+              {/* View Switcher: Horizontal List vs Columns */}
+              <div className="flex items-center bg-neutral-100 p-1 rounded-xl border border-neutral-200">
+                <button
+                  type="button"
+                  onClick={() => setJobsViewMode('table')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    jobsViewMode === 'table'
+                      ? 'bg-white text-[#010101] shadow-2xs'
+                      : 'text-neutral-500 hover:text-neutral-900'
+                  }`}
+                  title="Vista Horizontal en Tabla"
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span>Horizontal</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJobsViewMode('kanban')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    jobsViewMode === 'kanban'
+                      ? 'bg-white text-[#010101] shadow-2xs'
+                      : 'text-neutral-500 hover:text-neutral-900'
+                  }`}
+                  title="Vista en Columnas"
+                >
+                  <KanbanSquare className="w-3.5 h-3.5" />
+                  <span>Columnas</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {jobsViewMode === 'kanban' ? (
+            <KanbanBoard
+              mechanicFilterId={selectedMechanicId || undefined}
+              onSelectOrder={(order) => setSelectedOrder(order)}
+            />
+          ) : (
+            <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#010101] text-white font-mono font-bold">
+                    <tr>
+                      <th className="py-3 px-4">FOLIO</th>
+                      <th className="py-3 px-4">MOTOCICLETA</th>
+                      <th className="py-3 px-4">CLIENTE</th>
+                      <th className="py-3 px-4">MOTIVO / DIAGNÓSTICO</th>
+                      <th className="py-3 px-3 text-center">ESTADO ACTUAL</th>
+                      <th className="py-3 px-3 text-center">CRONÓMETRO</th>
+                      <th className="py-3 px-4 text-right">TOTAL / SALDO</th>
+                      <th className="py-3 px-4 text-center">ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-200 bg-white">
+                    {filteredJobs.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-10 text-center text-neutral-400">
+                          No se encontraron órdenes asignadas con los filtros seleccionados.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredJobs.map((order) => {
+                        const paid = (order.deposit || 0) + (order.payments || []).reduce((sum, p) => sum + p.amount, 0);
+                        const pendingBalance = Math.max(0, order.total - paid);
+                        const liveSeconds =
+                          (order.totalWorkedSeconds || 0) +
+                          (order.isTimerRunning && order.timerStartedAt
+                            ? Math.floor((Date.now() - order.timerStartedAt) / 1000)
+                            : 0);
+
+                        return (
+                          <tr key={order.id} className="hover:bg-neutral-50/80 transition">
+                            {/* Folio */}
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-black text-sm text-[#010101]">
+                                  {order.id}
+                                </span>
+                                {order.priority === 'urgente' && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-800 uppercase animate-pulse">
+                                    Urgente
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-neutral-400 font-mono block mt-0.5">
+                                #{order.orderNumber}
+                              </span>
+                            </td>
+
+                            {/* Moto */}
+                            <td className="py-3 px-4">
+                              <div className="font-extrabold text-[#010101] text-xs">
+                                {order.motorcycleInfo.brand} {order.motorcycleInfo.model}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mt-0.5">
+                                <span className="px-1.5 py-0.2 bg-amber-50 text-amber-900 border border-amber-200 rounded font-mono font-bold">
+                                  {order.motorcycleInfo.plate || 'Sin Placa'}
+                                </span>
+                                <span>• {order.motorcycleInfo.year} • {order.motorcycleInfo.displacement}</span>
+                              </div>
+                            </td>
+
+                            {/* Cliente */}
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-neutral-900">{order.customerName}</div>
+                              <a
+                                href={`https://wa.me/52${order.customerPhone.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-emerald-700 hover:underline flex items-center gap-1 mt-0.5 font-mono"
+                              >
+                                {order.customerPhone}
+                              </a>
+                            </td>
+
+                            {/* Motivo */}
+                            <td className="py-3 px-4 max-w-xs">
+                              <p className="font-medium text-neutral-800 line-clamp-1">{order.reasonForVisit}</p>
+                              {order.diagnosticNotes && (
+                                <p className="text-[10px] text-neutral-500 line-clamp-1 mt-0.5 italic">
+                                  Diag: {order.diagnosticNotes}
+                                </p>
+                              )}
+                            </td>
+
+                            {/* Estado con selector rápido */}
+                            <td className="py-3 px-3 text-center">
+                              <select
+                                value={order.status}
+                                onChange={(e) => updateOrderStatus(order.id, e.target.value as any)}
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold border-none outline-none cursor-pointer ${
+                                  order.status === 'entregado'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : order.status === 'listo_entrega'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : order.status === 'en_reparacion'
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : order.status === 'en_diagnostico'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-neutral-100 text-neutral-800'
+                                }`}
+                              >
+                                <option value="pendiente">1. Pendiente</option>
+                                <option value="en_diagnostico">2. En Diagnóstico</option>
+                                <option value="esperando_aprobacion">3. Esperando Aprobación</option>
+                                <option value="en_reparacion">4. En Reparación</option>
+                                <option value="esperando_refaccion">4b. Falta Refacción</option>
+                                <option value="pruebas_calidad">5. Pruebas / Calidad</option>
+                                <option value="listo_entrega">6. Listo para Entrega</option>
+                                <option value="entregado">7. Entregado</option>
+                              </select>
+                            </td>
+
+                            {/* Cronómetro */}
+                            <td className="py-3 px-3 text-center">
+                              <div className="inline-flex items-center gap-1.5 bg-neutral-50 border border-neutral-200 px-2 py-1 rounded-xl">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleOrderTimer(order.id, activeMechanic.id, activeMechanic.fullName)}
+                                  className={`p-1 rounded-md transition cursor-pointer ${
+                                    order.isTimerRunning
+                                      ? 'bg-rose-600 text-white animate-pulse'
+                                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                  }`}
+                                  title={order.isTimerRunning ? 'Pausar cronómetro' : 'Iniciar cronómetro'}
+                                >
+                                  {order.isTimerRunning ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                                </button>
+                                <span className={`font-mono text-xs font-black ${order.isTimerRunning ? 'text-[#DD040F]' : 'text-neutral-800'}`}>
+                                  {formatTimer(liveSeconds)}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Total / Saldo */}
+                            <td className="py-3 px-4 text-right">
+                              <div className="font-mono font-black text-neutral-900">${order.total.toFixed(2)}</div>
+                              <div className={`font-mono text-[10px] font-bold ${pendingBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                {pendingBalance > 0 ? `Saldo: $${pendingBalance.toFixed(2)}` : '✓ Liquidado'}
+                              </div>
+                            </td>
+
+                            {/* Acciones */}
+                            <td className="py-3 px-4 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrder(order)}
+                                  className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-600 hover:text-neutral-900 cursor-pointer"
+                                  title="Ver Ficha Completa"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setPdfOrder(order)}
+                                  className="p-1.5 hover:bg-neutral-100 rounded-lg text-[#DD040F] cursor-pointer"
+                                  title="Exportar Hoja Oficial PDF"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditOrder(order)}
+                                  className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600 cursor-pointer"
+                                  title="Editar Registro"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm(`¿Eliminar la orden ${order.id}?`)) {
+                                      deleteServiceOrder(order.id);
+                                    }
+                                  }}
+                                  className="p-1.5 hover:bg-rose-50 rounded-lg text-rose-600 cursor-pointer"
+                                  title="Eliminar Orden"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* SUBTAB 2: STOPWATCH & TIME LOGS */}
