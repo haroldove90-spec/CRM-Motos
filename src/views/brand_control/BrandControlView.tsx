@@ -418,48 +418,6 @@ export const BrandControlView: React.FC<BrandControlViewProps> = ({
         </div>
       </div>
 
-      {/* 6 ACCESOS A MARCAS (VENTO, DINAMO, MB, BDS, VELOCI, CARABELA) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {BRANDS.map((b) => {
-          const isActive = activeBrand === b.key;
-          const count = (brandControlData[b.key] || []).length;
-          return (
-            <button
-              key={b.key}
-              onClick={() => {
-                handleBrandChange(b.key);
-                setSearchTerm('');
-              }}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between text-left relative overflow-hidden ${
-                isActive
-                  ? 'border-2 shadow-md bg-white ' + b.activeBorder
-                  : 'bg-white border-neutral-200 hover:border-neutral-300'
-              }`}
-            >
-              {/* Brand Top Header Bar matching Excel Tabs from user images */}
-              <div className="flex items-center justify-between w-full mb-2">
-                <span
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-black tracking-wider uppercase shadow-2xs ${b.tabBg}`}
-                >
-                  {b.name}
-                </span>
-                <span className="font-mono text-xs font-bold text-neutral-500">
-                  {count} {count === 1 ? 'reg' : 'regs'}
-                </span>
-              </div>
-              <p className="text-[10px] text-neutral-500 line-clamp-2 mt-1">
-                {b.description}
-              </p>
-              {isActive && (
-                <div className="mt-2 pt-2 border-t border-neutral-100 flex items-center gap-1 text-[10px] font-bold text-[#010101]">
-                  <CheckCircle className="w-3 h-3 text-[#DD040F]" />
-                  <span>Pestaña Activa</span>
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
 
       {/* Active Brand Information & Search Filter Bar */}
       <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs space-y-3">
