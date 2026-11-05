@@ -87,6 +87,7 @@ interface CRMContextType {
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
   updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void;
   deleteInventoryItem: (id: string) => void;
+  deleteInventoryItemsBulk: (ids: string[]) => void;
   adjustInventoryStock: (id: string, delta: number) => void;
   importInventoryBulk: (items: Omit<InventoryItem, 'id'>[], mode?: 'upsert' | 'replace' | 'append') => Promise<{ added: number; updated: number; total: number }>;
   clearInventory: () => void;
@@ -888,6 +889,12 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setInventory((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const deleteInventoryItemsBulk = (ids: string[]) => {
+    if (!ids || ids.length === 0) return;
+    const idSet = new Set(ids);
+    setInventory((prev) => prev.filter((item) => !idSet.has(item.id)));
+  };
+
   const adjustInventoryStock = (id: string, delta: number) => {
     setInventory((prev) =>
       prev.map((item) => (item.id === id ? { ...item, stock: Math.max(0, item.stock + delta) } : item))
@@ -1556,6 +1563,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addInventoryItem,
         updateInventoryItem,
         deleteInventoryItem,
+        deleteInventoryItemsBulk,
         adjustInventoryStock,
         importInventoryBulk,
         clearInventory,

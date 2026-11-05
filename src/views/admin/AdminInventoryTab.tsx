@@ -22,9 +22,14 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   TrendingDown,
   Info,
   RefreshCw,
+  CheckSquare,
+  Square,
+  CornerDownRight,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -34,6 +39,7 @@ export const AdminInventoryTab: React.FC = () => {
     addInventoryItem,
     updateInventoryItem,
     deleteInventoryItem,
+    deleteInventoryItemsBulk,
     adjustInventoryStock,
     importInventoryBulk,
     clearInventory,
@@ -46,9 +52,14 @@ export const AdminInventoryTab: React.FC = () => {
   const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'out_of_stock' | 'low_stock'>('all');
   const [sortBy, setSortBy] = useState<'partNumber' | 'name' | 'stockAsc' | 'stockDesc' | 'priceAsc' | 'priceDesc' | 'totalDesc'>('name');
 
-  // Pagination state
+  // Pagination state (default: 20 products per page as requested)
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(50);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(20);
+  const [jumpPageInput, setJumpPageInput] = useState<string>('');
+
+  // Selection & Bulk Actions state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBatchDeleteModal, setShowBatchDeleteModal] = useState(false);
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -223,12 +234,33 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
       });
   }, [inventory, searchTerm, selectedCategory, stockFilter, sortBy]);
 
-  // Pagination slice
-  const totalPages = Math.ceil(filteredInventory.length / itemsPerPage) || 1;
+  // Total pages
+  const totalPages = Math.max(1, Math.ceil(filteredInventory.length / itemsPerPage));
+
+  // Current page items (in groups of 20 by default)
   const paginatedInventory = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredInventory.slice(start, start + itemsPerPage);
   }, [filteredInventory, currentPage, itemsPerPage]);
+
+  // Range indicators (e.g. 1 to 20 of 4,443)
+  const rangeStart = filteredInventory.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const rangeEnd = Math.min(currentPage * itemsPerPage, filteredInventory.length);
+
+  // Jump to page handlers
+  const handleJumpToPage = (targetPage: number) => {
+    const valid = Math.max(1, Math.min(totalPages, targetPage));
+    setCurrentPage(valid);
+    setJumpPageInput('');
+  };
+
+  const handleJumpInputSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const p = parseInt(jumpPageInput, 10);
+    if (!isNaN(p)) {
+      handleJumpToPage(p);
+    }
+  };
 
   // Reset to page 1 when filter/search changes
   const handleSearchChange = (val: string) => {
@@ -246,7 +278,88 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
     setCurrentPage(1);
   };
 
-  // Helper to parse currency numbers like "$ 2,000.00" or "-$ 170.00"
+  // Selection handlers
+  const isAllOnPageSelected = useMemo(() => {
+    if (paginatedInventory.length === 0) return false;
+    return paginatedInventory.every((item) => selectedIds.has(item.id));
+  }, [paginatedInventory, selectedIds]);
+
+  const isAllFilteredSelected = useMemo(() => {
+    if (filteredInventory.length === 0) return false;
+    return filteredInventory.length === selectedIds.size && filteredInventory.every((item) => selectedIds.has(item.id));
+  }, [filteredInventory, selectedIds]);
+
+  const handleToggleSelectAllOnPage = () => {
+    const next = new Set(selectedIds);
+    if (isAllOnPageSelected) {
+      // Deselect all on current page
+      paginatedInventory.forEach((item) => next.delete(item.id));
+    } else {
+      // Select all on current page
+      paginatedInventory.forEach((item) => next.add(item.id));
+    }
+    setSelectedIds(next);
+  };
+
+  const handleSelectAllFiltered = () => {
+    const next = new Set<string>();
+    filteredInventory.forEach((item) => next.add(item.id));
+    setSelectedIds(next);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleToggleSelectOne = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  // Execute Batch Deletion
+  const handleConfirmBatchDelete = () => {
+    const idsToDelete = Array.from(selectedIds);
+    if (idsToDelete.length === 0) return;
+
+    deleteInventoryItemsBulk(idsToDelete);
+    setSelectedIds(new Set());
+    setShowBatchDeleteModal(false);
+
+    // Adjust page if current page became empty
+    const remainingAfter = filteredInventory.length - idsToDelete.length;
+    const newTotalPages = Math.max(1, Math.ceil(remainingAfter / itemsPerPage));
+    if (currentPage > newTotalPages) {
+      setCurrentPage(newTotalPages);
+    }
+  };
+
+  // Export selected items
+  const handleExportSelected = () => {
+    const itemsToExport = filteredInventory.filter((i) => selectedIds.has(i.id));
+    if (itemsToExport.length === 0) return;
+
+    const rows = itemsToExport.map((item) => ({
+      Clave: item.partNumber,
+      Descripción: item.name,
+      Categoría: item.category || 'General',
+      Departamento: item.department || 'Refacciones',
+      'Precio Unitario ($)': item.salePrice,
+      'Existencias (Stock)': item.stock,
+      'Valor Total ($)': (item.salePrice || 0) * (item.stock || 0),
+      Ubicación: item.location || 'Almacén Principal',
+      Marca: item.brand || 'Universal',
+      'Stock Mínimo': item.minStock || 5,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Seleccionados');
+    XLSX.writeFile(workbook, `Productos_Seleccionados_${itemsToExport.length}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  // Helper to parse currency numbers
   const parseCurrency = (val: any): number => {
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
     if (!val) return 0;
@@ -258,7 +371,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
     return isNaN(num) ? 0 : num;
   };
 
-  // Helper to parse stock count like "1.0", "57.0", "-17.0"
+  // Helper to parse stock count
   const parseStock = (val: any): number => {
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
     if (!val) return 0;
@@ -286,11 +399,10 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
           throw new Error('No se pudo leer el archivo seleccionado.');
         }
 
-        // Read with XLSX (handles both CSV and Excel .xlsx/.xls)
         const workbook = XLSX.read(buffer, {
           type: 'array',
           raw: true,
-          codepage: 65001, // UTF-8 fallback
+          codepage: 65001,
         });
 
         const firstSheetName = workbook.SheetNames[0];
@@ -305,14 +417,11 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
           throw new Error('El archivo está vacío.');
         }
 
-        // Find header row or locate columns
-        // User CSV has header at row 2 (0-indexed) with Clave, Descripción, Precio U., Exis, Total
         let headerRowIdx = -1;
         let colClave = -1;
         let colDesc = -1;
         let colPrice = -1;
         let colStock = -1;
-        let colTotal = -1;
 
         for (let r = 0; r < Math.min(10, rawRows.length); r++) {
           const row = rawRows[r];
@@ -334,9 +443,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
             if (cell.includes('exis') || cell.includes('stock') || cell.includes('cant') || cell.includes('unidades')) {
               colStock = colIdx;
             }
-            if (cell.includes('total') || cell.includes('importe')) {
-              colTotal = colIdx;
-            }
           });
 
           if (colClave !== -1 && colDesc !== -1) {
@@ -345,7 +451,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
           }
         }
 
-        // Fallbacks if header wasn't labeled explicitly
         if (colClave === -1) colClave = 0;
         if (colDesc === -1) colDesc = 1;
         if (colPrice === -1) colPrice = rawRows[0].length >= 3 ? rawRows[0].length - 3 : 2;
@@ -361,16 +466,13 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
           const clave = String(row[colClave] || '').trim();
           const desc = String(row[colDesc] || '').trim();
 
-          // Skip empty or header-like rows
           if (!clave && !desc) continue;
           if (clave.toLowerCase() === 'clave' || desc.toLowerCase() === 'descripción') continue;
           if (clave.toLowerCase().includes('reporte de inventario')) continue;
 
-          // Find price and stock from columns or search row if shifted
           let price = parseCurrency(row[colPrice]);
           let stock = parseStock(row[colStock]);
 
-          // In case columns were shifted or there were empty cells
           if (price === 0 && stock === 0) {
             for (let c = 2; c < row.length; c++) {
               const cell = String(row[c] || '').trim();
@@ -381,7 +483,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
             }
           }
 
-          // Auto-categorize based on description
           const descUpper = desc.toUpperCase();
           let autoCat = 'General';
           if (descUpper.includes('ACEITE') || descUpper.includes('LUBRICANTE') || descUpper.includes('LIQUIDO')) autoCat = 'Aceites y Fluidos';
@@ -393,7 +494,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
           else if (descUpper.includes('AMORTIGUADOR') || descUpper.includes('BARRA') || descUpper.includes('YUGO') || descUpper.includes('HORQUILLA')) autoCat = 'Suspensión y Chasis';
           else if (descUpper.includes('FILTRO')) autoCat = 'Filtros';
 
-          // Auto-detect brand from description or clave prefix
           let autoBrand = 'Universal';
           if (descUpper.includes('VENTO') || clave.startsWith('V-')) autoBrand = 'Vento';
           else if (descUpper.includes('ITALIKA')) autoBrand = 'Italika';
@@ -454,6 +554,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
       const res = await importInventoryBulk(parsedPreview, importMode);
       setImportResult(res);
       setIsImporting(false);
+      setSelectedIds(new Set());
     } catch (err: any) {
       setImportError(err.message || 'Error al guardar los productos en la base de datos.');
       setIsImporting(false);
@@ -485,7 +586,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Inventario');
 
-    // Auto column widths
     const maxCols = [15, 45, 18, 16, 16, 16, 16, 18, 16, 14, 10];
     worksheet['!cols'] = maxCols.map((w) => ({ wch: w }));
 
@@ -542,12 +642,11 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
       return;
     }
 
-    // Check duplicate
     const exists = inventory.some(
       (i) => i.partNumber.trim().toUpperCase() === formData.partNumber.trim().toUpperCase()
     );
     if (exists) {
-      if (!confirm(`La clave "${formData.partNumber}" ya existe en el inventario. ¿Deseas agregarla de todos modos con un sufijo nuevo?`)) {
+      if (!confirm(`La clave "${formData.partNumber}" ya existe en el inventario. ¿Deseas agregarla de todos modos?`)) {
         return;
       }
     }
@@ -604,6 +703,11 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
   const handleDeleteProduct = (item: InventoryItem) => {
     if (confirm(`¿Estás seguro de eliminar el producto "${item.partNumber} - ${item.name}"?`)) {
       deleteInventoryItem(item.id);
+      if (selectedIds.has(item.id)) {
+        const next = new Set(selectedIds);
+        next.delete(item.id);
+        setSelectedIds(next);
+      }
     }
   };
 
@@ -628,7 +732,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                 Control y Catálogo de Inventario (Rol Admin)
               </h2>
               <p className="text-xs text-neutral-500 mt-0.5">
-                Importación masiva Excel/CSV, altas manuales, precios de venta y sincronización con base de datos.
+                Visualización en bloques de 20 productos, selección individual o total, borrado masivo y exportación.
               </p>
             </div>
           </div>
@@ -841,32 +945,91 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
           </div>
         </div>
 
-        {/* Counter of shown items */}
-        <div className="flex items-center justify-between text-xs text-neutral-500 pt-1 border-t border-neutral-100">
+        {/* Counter & Per-page configuration */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-neutral-500 pt-1 border-t border-neutral-100">
           <div>
-            Mostrando <span className="font-bold text-neutral-800">{filteredInventory.length}</span> productos
-            {searchTerm && ` que coinciden con "${searchTerm}"`}
-            {selectedCategory !== 'all' && ` en "${selectedCategory}"`}
+            Mostrando productos del <span className="font-bold text-neutral-900">{rangeStart}</span> al{' '}
+            <span className="font-bold text-neutral-900">{rangeEnd}</span> de un total de{' '}
+            <span className="font-bold text-neutral-900">{filteredInventory.length.toLocaleString()}</span>
+            {searchTerm && ` (filtrados por "${searchTerm}")`}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span>Por página:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="bg-neutral-50 border border-neutral-200 rounded-lg px-2 py-0.5 text-xs outline-none"
-            >
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-              <option value={250}>250</option>
-            </select>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span>Productos por bloque:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-neutral-50 border border-neutral-200 rounded-lg px-2 py-0.5 text-xs font-bold text-neutral-800 outline-none cursor-pointer"
+              >
+                <option value={20}>20 productos (Por defecto)</option>
+                <option value={50}>50 productos</option>
+                <option value={100}>100 productos</option>
+                <option value={200}>200 productos</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* ============================================================ */}
+      {/* SELECTION BAR / ACCIONES MASIVAS                             */}
+      {/* ============================================================ */}
+      {selectedIds.size > 0 && (
+        <div className="bg-neutral-900 text-white p-3.5 rounded-2xl shadow-lg border border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150">
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 bg-[#DD040F] text-white rounded-lg">
+              <CheckSquare className="w-4 h-4" />
+            </span>
+            <div>
+              <span className="text-xs font-bold text-white">
+                {selectedIds.size.toLocaleString('es-MX')} {selectedIds.size === 1 ? 'producto seleccionado' : 'productos seleccionados'}
+              </span>
+              <span className="text-[11px] text-neutral-400 ml-2">
+                (de {filteredInventory.length.toLocaleString('es-MX')} productos visibles)
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center flex-wrap gap-2">
+            {!isAllFilteredSelected && (
+              <button
+                onClick={handleSelectAllFiltered}
+                className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-semibold transition cursor-pointer"
+              >
+                Seleccionar todos ({filteredInventory.length.toLocaleString()})
+              </button>
+            )}
+
+            <button
+              onClick={handleExportSelected}
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Exportar ({selectedIds.size})</span>
+            </button>
+
+            <button
+              onClick={() => setShowBatchDeleteModal(true)}
+              className="flex items-center gap-1 px-3.5 py-1.5 bg-[#DD040F] hover:bg-[#b0030c] text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Borrar Seleccionados ({selectedIds.size})</span>
+            </button>
+
+            <button
+              onClick={handleClearSelection}
+              className="p-1.5 text-neutral-400 hover:text-white rounded-lg transition"
+              title="Deseleccionar todos"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Inventory Horizontal Table */}
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xs overflow-hidden">
@@ -874,6 +1037,20 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
           <table className="w-full text-left border-collapse min-w-[850px]">
             <thead>
               <tr className="bg-neutral-900 text-white text-[11px] font-bold tracking-wider uppercase">
+                {/* Selection Checkbox */}
+                <th className="py-3 px-3 w-10 text-center">
+                  <button
+                    onClick={handleToggleSelectAllOnPage}
+                    className="p-1 hover:bg-neutral-800 rounded transition cursor-pointer inline-flex items-center justify-center text-white"
+                    title={isAllOnPageSelected ? 'Deseleccionar página actual' : 'Seleccionar los 20 de esta página'}
+                  >
+                    {isAllOnPageSelected ? (
+                      <CheckSquare className="w-4 h-4 text-[#DD040F]" />
+                    ) : (
+                      <Square className="w-4 h-4 text-neutral-400" />
+                    )}
+                  </button>
+                </th>
                 <th className="py-3 px-4">Clave / SKU</th>
                 <th className="py-3 px-4">Descripción del Producto</th>
                 <th className="py-3 px-3">Categoría</th>
@@ -887,7 +1064,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
             <tbody className="divide-y divide-neutral-200 text-xs">
               {paginatedInventory.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-neutral-400">
+                  <td colSpan={9} className="py-12 text-center text-neutral-400">
                     <Package className="w-10 h-10 mx-auto text-neutral-300 mb-2" />
                     <p className="font-semibold text-neutral-700 text-sm">No se encontraron productos</p>
                     <p className="text-xs text-neutral-400 mt-1">
@@ -904,15 +1081,32 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                   const totalVal = priceNum * stockNum;
                   const isOutOfStock = stockNum <= 0;
                   const isLowStock = stockNum > 0 && stockNum <= (item.minStock || 5);
+                  const isSelected = selectedIds.has(item.id);
 
                   return (
                     <tr
                       key={item.id}
-                      className="hover:bg-neutral-50/80 transition-colors"
+                      className={`transition-colors ${
+                        isSelected ? 'bg-red-50/60 hover:bg-red-50/90' : 'hover:bg-neutral-50/80'
+                      }`}
                     >
+                      {/* Selection Checkbox */}
+                      <td className="py-2.5 px-3 text-center">
+                        <button
+                          onClick={() => handleToggleSelectOne(item.id)}
+                          className="p-1 rounded hover:bg-neutral-200/50 transition cursor-pointer text-neutral-600"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="w-4 h-4 text-[#DD040F]" />
+                          ) : (
+                            <Square className="w-4 h-4 text-neutral-400" />
+                          )}
+                        </button>
+                      </td>
+
                       {/* Clave / SKU */}
                       <td className="py-2.5 px-4 font-mono font-bold text-neutral-900 whitespace-nowrap">
-                        <span className="bg-neutral-100 px-2 py-0.5 rounded text-[11px]">
+                        <span className={`px-2 py-0.5 rounded text-[11px] ${isSelected ? 'bg-red-100 text-[#DD040F]' : 'bg-neutral-100'}`}>
                           {item.partNumber}
                         </span>
                       </td>
@@ -976,7 +1170,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                               setAdjustDelta(1);
                             }}
                             title="Ajuste rápido de existencias"
-                            className="p-1.5 hover:bg-neutral-100 text-neutral-600 rounded-lg transition"
+                            className="p-1.5 hover:bg-neutral-100 text-neutral-600 rounded-lg transition cursor-pointer"
                           >
                             <ArrowUpDown className="w-3.5 h-3.5" />
                           </button>
@@ -985,7 +1179,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                           <button
                             onClick={() => setViewingItem(item)}
                             title="Ver detalle del producto"
-                            className="p-1.5 hover:bg-neutral-100 text-blue-600 rounded-lg transition"
+                            className="p-1.5 hover:bg-neutral-100 text-blue-600 rounded-lg transition cursor-pointer"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -994,7 +1188,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                           <button
                             onClick={() => handleOpenEditModal(item)}
                             title="Editar producto"
-                            className="p-1.5 hover:bg-neutral-100 text-amber-600 rounded-lg transition"
+                            className="p-1.5 hover:bg-neutral-100 text-amber-600 rounded-lg transition cursor-pointer"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -1002,8 +1196,8 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                           {/* Delete product */}
                           <button
                             onClick={() => handleDeleteProduct(item)}
-                            title="Eliminar del catálogo"
-                            className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition"
+                            title="Eliminar este producto"
+                            className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1017,37 +1211,190 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
           </table>
         </div>
 
-        {/* Pagination Bar */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-200 bg-neutral-50 text-xs text-neutral-600">
-            <div>
-              Página <span className="font-bold text-neutral-900">{currentPage}</span> de{' '}
-              <span className="font-bold text-neutral-900">{totalPages}</span> (
-              {filteredInventory.length.toLocaleString()} total)
+        {/* ============================================================ */}
+        {/* ENHANCED PAGINATION BAR WITH "SALTAR PÁGINA"                 */}
+        {/* ============================================================ */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-5 py-3.5 border-t border-neutral-200 bg-neutral-50 text-xs text-neutral-600">
+          {/* Status info */}
+          <div className="flex items-center gap-2">
+            <span>
+              Página <strong className="text-neutral-900 font-black">{currentPage}</strong> de{' '}
+              <strong className="text-neutral-900 font-black">{totalPages.toLocaleString()}</strong>
+            </span>
+            <span className="text-neutral-300">|</span>
+            <span className="text-neutral-500">
+              Viendo {rangeStart}–{rangeEnd} de {filteredInventory.length.toLocaleString()} productos
+            </span>
+          </div>
+
+          {/* Page Jump Form */}
+          <form onSubmit={handleJumpInputSubmit} className="flex items-center gap-1.5">
+            <span className="text-neutral-600 font-medium">Saltar a página:</span>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              placeholder={String(currentPage)}
+              value={jumpPageInput}
+              onChange={(e) => setJumpPageInput(e.target.value)}
+              className="w-16 px-2 py-1 bg-white border border-neutral-300 rounded-lg text-xs font-mono font-bold text-center outline-none focus:ring-1 focus:ring-[#DD040F]"
+            />
+            <button
+              type="submit"
+              className="flex items-center gap-1 px-2.5 py-1 bg-neutral-900 hover:bg-black text-white rounded-lg text-xs font-bold transition cursor-pointer shadow-2xs"
+            >
+              <span>Ir</span>
+              <CornerDownRight className="w-3 h-3" />
+            </button>
+          </form>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center gap-1.5">
+            {/* Primera página */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => handleJumpToPage(1)}
+              className="p-1.5 bg-white border border-neutral-200 rounded-lg font-medium text-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-100 transition shadow-2xs cursor-pointer"
+              title="Ir a primera página (Pág. 1)"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+
+            {/* 20 Anteriores */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => handleJumpToPage(currentPage - 1)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-white border border-neutral-200 rounded-lg font-bold text-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-100 transition shadow-2xs cursor-pointer"
+              title="Ver los 20 anteriores"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>20 Anteriores</span>
+            </button>
+
+            {/* Quick page pills */}
+            <div className="hidden sm:flex items-center gap-1 px-1">
+              {currentPage > 2 && (
+                <button
+                  onClick={() => handleJumpToPage(1)}
+                  className="w-7 h-7 rounded-lg bg-white border border-neutral-200 font-mono text-[11px] font-bold text-neutral-600 hover:bg-neutral-100"
+                >
+                  1
+                </button>
+              )}
+              {currentPage > 3 && <span className="text-neutral-400">...</span>}
+              {currentPage > 1 && (
+                <button
+                  onClick={() => handleJumpToPage(currentPage - 1)}
+                  className="w-7 h-7 rounded-lg bg-white border border-neutral-200 font-mono text-[11px] font-bold text-neutral-600 hover:bg-neutral-100"
+                >
+                  {currentPage - 1}
+                </button>
+              )}
+              <span className="w-7 h-7 rounded-lg bg-[#DD040F] text-white font-mono text-[11px] font-black flex items-center justify-center shadow-xs">
+                {currentPage}
+              </span>
+              {currentPage < totalPages && (
+                <button
+                  onClick={() => handleJumpToPage(currentPage + 1)}
+                  className="w-7 h-7 rounded-lg bg-white border border-neutral-200 font-mono text-[11px] font-bold text-neutral-600 hover:bg-neutral-100"
+                >
+                  {currentPage + 1}
+                </button>
+              )}
+              {currentPage < totalPages - 2 && <span className="text-neutral-400">...</span>}
+              {currentPage < totalPages - 1 && (
+                <button
+                  onClick={() => handleJumpToPage(totalPages)}
+                  className="w-7 h-7 rounded-lg bg-white border border-neutral-200 font-mono text-[11px] font-bold text-neutral-600 hover:bg-neutral-100"
+                >
+                  {totalPages}
+                </button>
+              )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="flex items-center gap-1 px-3 py-1.5 bg-white border border-neutral-200 rounded-lg font-medium text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-100 transition shadow-2xs"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span>Anterior</span>
-              </button>
+            {/* 20 Siguientes */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => handleJumpToPage(currentPage + 1)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-white border border-neutral-200 rounded-lg font-bold text-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-100 transition shadow-2xs cursor-pointer"
+              title="Ver los siguientes 20 productos"
+            >
+              <span>20 Siguientes</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
 
+            {/* Última página */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => handleJumpToPage(totalPages)}
+              className="p-1.5 bg-white border border-neutral-200 rounded-lg font-medium text-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-100 transition shadow-2xs cursor-pointer"
+              title={`Ir a última página (Pág. ${totalPages})`}
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================ */}
+      {/* MODAL: CONFIRMACIÓN DE BORRADO MASIVO                        */}
+      {/* ============================================================ */}
+      {showBatchDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full border border-neutral-200 shadow-2xl p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="p-3 bg-red-100 text-red-600 rounded-2xl shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </span>
+              <div>
+                <h3 className="font-black text-lg text-neutral-900">
+                  ¿Borrar {selectedIds.size} {selectedIds.size === 1 ? 'producto' : 'productos'}?
+                </h3>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Esta acción eliminará de forma permanente los artículos seleccionados del catálogo y de la base de datos.
+                </p>
+              </div>
+            </div>
+
+            {/* Sample of items to delete */}
+            <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 max-h-40 overflow-y-auto space-y-1 text-xs">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block mb-1">
+                Artículos seleccionados para eliminar:
+              </span>
+              {filteredInventory
+                .filter((item) => selectedIds.has(item.id))
+                .slice(0, 5)
+                .map((item) => (
+                  <div key={item.id} className="flex items-center gap-2 text-neutral-700">
+                    <span className="font-mono font-bold text-red-700 text-[11px]">{item.partNumber}</span>
+                    <span className="truncate">{item.name}</span>
+                  </div>
+                ))}
+              {selectedIds.size > 5 && (
+                <p className="text-[11px] text-neutral-400 italic pt-1">
+                  ... y {selectedIds.size - 5} productos adicionales.
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-neutral-100">
               <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="flex items-center gap-1 px-3 py-1.5 bg-white border border-neutral-200 rounded-lg font-medium text-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-100 transition shadow-2xs"
+                onClick={() => setShowBatchDeleteModal(false)}
+                className="px-4 py-2 border border-neutral-300 hover:bg-neutral-100 text-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
-                <span>Siguiente</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmBatchDelete}
+                className="flex items-center gap-1.5 px-5 py-2 bg-[#DD040F] hover:bg-[#b0030c] text-white text-xs font-black rounded-xl transition shadow-xs cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Sí, Borrar ({selectedIds.size})</span>
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ============================================================ */}
       {/* MODAL 1: IMPORT EXCEL / CSV WITH LIVE PREVIEW & SAVE        */}
@@ -1145,7 +1492,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                   </div>
                 </div>
 
-                {/* Preview Table (First 5 items) */}
+                {/* Preview Table */}
                 <div>
                   <div className="text-xs font-bold text-neutral-600 mb-1.5 flex items-center justify-between">
                     <span>Vista previa de los primeros 5 productos:</span>
@@ -1179,7 +1526,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                   </div>
                 </div>
 
-                {/* Action button */}
                 <div className="flex items-center justify-end gap-3 pt-2">
                   <button
                     onClick={() => setShowImportModal(false)}
@@ -1264,7 +1610,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
 
             <form onSubmit={handleSaveAddProduct} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {/* Clave / SKU */}
                 <div>
                   <label className="block text-xs font-bold text-neutral-700 mb-1">
                     Clave / SKU / Código *
@@ -1279,7 +1624,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                   />
                 </div>
 
-                {/* Marca / Compatibilidad */}
                 <div>
                   <label className="block text-xs font-bold text-neutral-700 mb-1">
                     Marca o Compatibilidad
@@ -1294,7 +1638,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                 </div>
               </div>
 
-              {/* Descripción */}
               <div>
                 <label className="block text-xs font-bold text-neutral-700 mb-1">
                   Descripción del Producto *
@@ -1309,7 +1652,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                 />
               </div>
 
-              {/* Categoría y Departamento */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-bold text-neutral-700 mb-1">
@@ -1346,7 +1688,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                 </div>
               </div>
 
-              {/* Precios y Existencias */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 bg-neutral-50 p-3.5 rounded-xl border border-neutral-200">
                 <div>
                   <label className="block text-xs font-bold text-neutral-700 mb-1">
@@ -1433,7 +1774,6 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-200">
                 <button
                   type="button"
@@ -1645,7 +1985,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setAdjustDelta((d) => d - 1)}
-                  className="w-10 h-10 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-black text-lg transition"
+                  className="w-10 h-10 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-black text-lg transition cursor-pointer"
                 >
                   -
                 </button>
@@ -1657,7 +1997,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                 />
                 <button
                   onClick={() => setAdjustDelta((d) => d + 1)}
-                  className="w-10 h-10 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-black text-lg transition"
+                  className="w-10 h-10 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-black text-lg transition cursor-pointer"
                 >
                   +
                 </button>
@@ -1670,7 +2010,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 onClick={() => setQuickAdjustItem(null)}
-                className="px-3.5 py-1.5 border border-neutral-300 hover:bg-neutral-100 text-neutral-700 text-xs font-bold rounded-xl transition"
+                className="px-3.5 py-1.5 border border-neutral-300 hover:bg-neutral-100 text-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Cancelar
               </button>
@@ -1758,13 +2098,13 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
                   setViewingItem(null);
                   handleOpenEditModal(it);
                 }}
-                className="px-4 py-2 bg-neutral-900 hover:bg-black text-white text-xs font-bold rounded-xl transition"
+                className="px-4 py-2 bg-neutral-900 hover:bg-black text-white text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Editar Información
               </button>
               <button
                 onClick={() => setViewingItem(null)}
-                className="px-4 py-2 border border-neutral-300 hover:bg-neutral-100 text-neutral-700 text-xs font-bold rounded-xl transition"
+                className="px-4 py-2 border border-neutral-300 hover:bg-neutral-100 text-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Cerrar
               </button>
@@ -1841,7 +2181,7 @@ ON inventory FOR ALL USING (true) WITH CHECK (true);`;
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setShowSqlModal(false)}
-                className="px-4 py-2 bg-neutral-900 text-white rounded-xl text-xs font-bold"
+                className="px-4 py-2 bg-neutral-900 text-white rounded-xl text-xs font-bold cursor-pointer"
               >
                 Entendido
               </button>
