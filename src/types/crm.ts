@@ -211,18 +211,23 @@ export interface Motorcycle {
 
 export interface InventoryItem {
   id: string;
-  partNumber: string;
-  name: string;
+  partNumber: string; // Clave / SKU
+  name: string;       // Descripción
   brand: string;
-  category: 'aceites_fluidos' | 'frenos' | 'motor' | 'transmision' | 'electricidad' | 'neumaticos' | 'filtros' | 'accesorios';
-  compatibleModels: string[]; // e.g. ["Yamaha MT-03", "Yamaha R3", "Italika 250Z"]
+  category: 'aceites_fluidos' | 'frenos' | 'motor' | 'transmision' | 'electricidad' | 'neumaticos' | 'filtros' | 'accesorios' | string;
+  compatibleModels: string[];
   costPrice: number;
-  salePrice: number;
+  salePrice: number;  // Precio U.
   cost?: number;
   price?: number;
-  stock: number;
+  stock: number;      // Exis
   minStock: number;
-  location?: string; // e.g. "Estante B-3"
+  location?: string;
+  department?: string; // Departamento
+  totalValue?: number; // Total calculado
+  unit?: string;       // Unidad
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface StaffUser {

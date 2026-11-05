@@ -33,6 +33,7 @@ import { FinancesExpensesTab } from './FinancesExpensesTab';
 import { ReceivablesPayablesTab } from './ReceivablesPayablesTab';
 import { FormalPayrollTab } from './FormalPayrollTab';
 import { BrandWarrantiesTab } from './BrandWarrantiesTab';
+import { AdminInventoryTab } from './AdminInventoryTab';
 
 interface AdminDashboardProps {
   activeModule?: string;
@@ -1289,6 +1290,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* SUBTAB: INVENTARIO & CATÁLOGO */}
+      {subTab === 'inventory' && <AdminInventoryTab />}
 
       {/* SUBTAB: FINANZAS & GASTOS SAT */}
       {subTab === 'finances' && <FinancesExpensesTab />}

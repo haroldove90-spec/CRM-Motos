@@ -52,6 +52,7 @@ export const getNavItemsForRole = (role: UserRole): NavItem[] => {
     case 'admin':
       return [
         { id: 'dashboard', label: 'Dashboard & KPIs', icon: LayoutDashboard },
+        { id: 'inventory', label: 'Inventario & Catálogo', icon: Package },
         { id: 'finances', label: 'Finanzas, Gastos & SAT', icon: DollarSign },
         { id: 'payables', label: 'Cuentas x Cobrar/Pagar', icon: Wallet },
         { id: 'payroll', label: 'Nómina Formal e IMSS', icon: Building2 },

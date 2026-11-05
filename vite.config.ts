@@ -44,6 +44,9 @@ export default defineConfig(() => {
             },
           ],
         },
+        workbox: {
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // 6 MiB to allow bundled office/spreadsheet assets
+        },
       }),
     ],
     resolve: {

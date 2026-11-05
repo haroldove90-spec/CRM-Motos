@@ -88,6 +88,8 @@ interface CRMContextType {
   updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void;
   deleteInventoryItem: (id: string) => void;
   adjustInventoryStock: (id: string, delta: number) => void;
+  importInventoryBulk: (items: Omit<InventoryItem, 'id'>[], mode?: 'upsert' | 'replace' | 'append') => Promise<{ added: number; updated: number; total: number }>;
+  clearInventory: () => void;
 
   // Staff
   addStaff: (user: Omit<StaffUser, 'id'>) => void;
@@ -892,6 +894,151 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const clearInventory = () => {
+    setInventory([]);
+    localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify([]));
+  };
+
+  const importInventoryBulk = async (
+    items: Omit<InventoryItem, 'id'>[],
+    mode: 'upsert' | 'replace' | 'append' = 'upsert'
+  ): Promise<{ added: number; updated: number; total: number }> => {
+    const timestamp = Date.now();
+    let addedCount = 0;
+    let updatedCount = 0;
+    let newInventory: InventoryItem[] = [];
+
+    if (mode === 'replace') {
+      newInventory = items.map((it, idx) => ({
+        ...it,
+        id: `inv-${timestamp}-${idx}`,
+        brand: it.brand || 'Universal',
+        costPrice: it.costPrice || 0,
+        minStock: it.minStock || 5,
+        compatibleModels: it.compatibleModels || [],
+        createdAt: it.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+      addedCount = newInventory.length;
+    } else if (mode === 'append') {
+      const formatted = items.map((it, idx) => ({
+        ...it,
+        id: `inv-${timestamp}-${idx}`,
+        brand: it.brand || 'Universal',
+        costPrice: it.costPrice || 0,
+        minStock: it.minStock || 5,
+        compatibleModels: it.compatibleModels || [],
+        createdAt: it.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+      newInventory = [...formatted, ...inventory];
+      addedCount = formatted.length;
+    } else {
+      // Upsert mode (default & recommended)
+      // Map existing by lowercase partNumber
+      const existingMap = new Map<string, InventoryItem>();
+      inventory.forEach((item) => {
+        if (item.partNumber) {
+          existingMap.set(item.partNumber.trim().toUpperCase(), item);
+        }
+      });
+
+      const updatedExisting = new Set<string>();
+      const newItemsToAdd: InventoryItem[] = [];
+
+      items.forEach((it, idx) => {
+        const key = it.partNumber ? it.partNumber.trim().toUpperCase() : '';
+        if (key && existingMap.has(key)) {
+          const oldItem = existingMap.get(key)!;
+          const merged: InventoryItem = {
+            ...oldItem,
+            ...it,
+            id: oldItem.id,
+            name: it.name || oldItem.name,
+            salePrice: it.salePrice,
+            stock: it.stock,
+            totalValue: it.salePrice * it.stock,
+            category: it.category || oldItem.category || 'General',
+            department: it.department || oldItem.department || 'Refacciones',
+            location: it.location || oldItem.location || 'Almacén',
+            brand: it.brand || oldItem.brand || 'Universal',
+            costPrice: it.costPrice ?? oldItem.costPrice ?? 0,
+            minStock: it.minStock ?? oldItem.minStock ?? 5,
+            compatibleModels: it.compatibleModels || oldItem.compatibleModels || [],
+            updatedAt: new Date().toISOString(),
+          };
+          existingMap.set(key, merged);
+          updatedExisting.add(key);
+          updatedCount++;
+        } else {
+          const created: InventoryItem = {
+            ...it,
+            id: `inv-${timestamp}-${idx}`,
+            totalValue: it.salePrice * it.stock,
+            category: it.category || 'General',
+            department: it.department || 'Refacciones',
+            location: it.location || 'Almacén',
+            brand: it.brand || 'Universal',
+            costPrice: it.costPrice || 0,
+            minStock: it.minStock || 5,
+            compatibleModels: it.compatibleModels || [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          if (key) existingMap.set(key, created);
+          newItemsToAdd.push(created);
+          addedCount++;
+        }
+      });
+
+      // Construct final list: all updated/existing plus brand new
+      const remainingOld = inventory.filter(
+        (it) => it.partNumber && !updatedExisting.has(it.partNumber.trim().toUpperCase())
+      );
+      const updatedList = Array.from(updatedExisting).map((k) => existingMap.get(k)!);
+      newInventory = [...newItemsToAdd, ...updatedList, ...remainingOld];
+    }
+
+    // Persist to state and localStorage
+    setInventory(newInventory);
+    try {
+      localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(newInventory));
+    } catch (e) {
+      console.warn('LocalStorage quota limit reached for inventory', e);
+    }
+
+    // Optional Supabase sync if credentials are configured
+    if (settings.supabaseUrl && settings.supabaseAnonKey) {
+      try {
+        const supabaseRows = newInventory.slice(0, 500).map((i) => ({
+          clave: i.partNumber,
+          descripcion: i.name,
+          precio_unitario: i.salePrice,
+          existencias: i.stock,
+          departamento: i.department || 'Refacciones',
+          categoria: i.category || 'General',
+          ubicacion: i.location || 'Almacén',
+          updated_at: new Date().toISOString(),
+        }));
+
+        await fetch(`${settings.supabaseUrl.replace(/\/$/, '')}/rest/v1/inventory`, {
+          method: 'POST',
+          headers: {
+            apikey: settings.supabaseAnonKey,
+            Authorization: `Bearer ${settings.supabaseAnonKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'resolution=merge-duplicates',
+          },
+          body: JSON.stringify(supabaseRows),
+        });
+      } catch (sbErr) {
+        console.warn('Supabase auto-sync optional inventory attempt:', sbErr);
+      }
+    }
+
+    return { added: addedCount, updated: updatedCount, total: newInventory.length };
+  };
+
   // Staff CRUD
   const addStaff = (user: Omit<StaffUser, 'id'>) => {
     const newUser: StaffUser = {
@@ -1410,6 +1557,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateInventoryItem,
         deleteInventoryItem,
         adjustInventoryStock,
+        importInventoryBulk,
+        clearInventory,
         addStaff,
         updateStaff,
         deleteStaff,
